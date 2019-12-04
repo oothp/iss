@@ -1,12 +1,12 @@
-package com.mig.myapplication.viewmodel
+package com.mig.iss.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.maps.model.LatLng
-import com.mig.myapplication.model.Dynamic
-import com.mig.myapplication.model.IssPosition
-import com.mig.myapplication.model.People
-import com.mig.myapplication.model.enums.PeopleViewState
-import com.mig.myapplication.retrofit.ApiServiceFromApi
+import com.mig.iss.model.Dynamic
+import com.mig.iss.model.IssPosition
+import com.mig.iss.model.People
+import com.mig.iss.model.enums.PeopleViewState
+import com.mig.iss.retrofit.ApiServiceFromApi
 import kotlin.properties.Delegates.observable
 
 class MainViewModel : ViewModel(), MainActivityViewModel {

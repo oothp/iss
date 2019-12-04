@@ -1,4 +1,4 @@
-package com.mig.myapplication.view
+package com.mig.iss.view
 
 import android.content.Context
 import android.os.Bundle
@@ -6,7 +6,6 @@ import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProviders
@@ -19,12 +18,12 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.mig.myapplication.Const
-import com.mig.myapplication.R
-import com.mig.myapplication.databinding.ActivityMainBinding
-import com.mig.myapplication.databinding.ViewPeopleBinding
-import com.mig.myapplication.viewmodel.MainViewModel
-import com.mig.myapplication.viewmodel.ViewModelFactory
+import com.mig.iss.Const
+import com.mig.iss.R
+import com.mig.iss.databinding.ActivityMainBinding
+import com.mig.iss.databinding.ViewPeopleBinding
+import com.mig.iss.viewmodel.MainViewModel
+import com.mig.iss.viewmodel.ViewModelFactory
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 

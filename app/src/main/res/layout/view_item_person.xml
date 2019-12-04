@@ -7,7 +7,7 @@
 
         <variable
             name="item"
-            type="com.mig.myapplication.viewmodel.ItemDataViewModel" />
+            type="com.mig.iss.viewmodel.ItemDataViewModel" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout

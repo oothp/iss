@@ -1,4 +1,4 @@
-package com.mig.myapplication.viewmodel
+package com.mig.iss.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

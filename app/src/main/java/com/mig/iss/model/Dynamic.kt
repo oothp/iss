@@ -1,4 +1,4 @@
-package com.mig.myapplication.model
+package com.mig.iss.model
 
 import kotlin.properties.Delegates
 

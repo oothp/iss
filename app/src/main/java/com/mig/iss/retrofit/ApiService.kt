@@ -1,8 +1,8 @@
-package com.mig.myapplication.retrofit
+package com.mig.iss.retrofit
 
-import com.mig.myapplication.Const
-import com.mig.myapplication.model.CurrentInfo
-import com.mig.myapplication.model.People
+import com.mig.iss.Const
+import com.mig.iss.model.CurrentInfo
+import com.mig.iss.model.People
 import retrofit2.Call
 import retrofit2.http.GET
 

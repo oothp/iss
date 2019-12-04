@@ -1,4 +1,4 @@
-package com.mig.myapplication.model.enums
+package com.mig.iss.model.enums
 
 enum class PeopleViewState {
     VISIBLE,

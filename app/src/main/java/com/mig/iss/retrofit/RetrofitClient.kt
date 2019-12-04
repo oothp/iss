@@ -1,4 +1,4 @@
-package com.mig.myapplication.retrofit
+package com.mig.iss.retrofit
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

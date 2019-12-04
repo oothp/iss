@@ -1,10 +1,10 @@
-package com.mig.myapplication.view
+package com.mig.iss.view
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.mig.myapplication.databinding.ViewItemPersonBinding
-import com.mig.myapplication.viewmodel.ItemDataViewModel
+import com.mig.iss.databinding.ViewItemPersonBinding
+import com.mig.iss.viewmodel.ItemDataViewModel
 
 class PeopleAdapter : RecyclerView.Adapter<PeopleAdapter.ViewHolder>() {
 

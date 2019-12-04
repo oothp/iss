@@ -1,4 +1,4 @@
-package com.mig.myapplication
+package com.mig.iss
 
 import org.junit.Test
 

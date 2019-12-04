@@ -1,4 +1,4 @@
-package com.mig.myapplication
+package com.mig.iss
 
 /**
  * Created by mig on 05/04/2017.
