@@ -1,11 +1,13 @@
 package com.mig.myapplication.model
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 /**
  * Created by mig on 05/04/2017.
  */
 
+@Keep
 class CurrentInfo {
 
     @SerializedName("timestamp")
