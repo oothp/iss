@@ -1,0 +1,12 @@
+<resources>
+
+    <dimen name="margin_default">16dp</dimen>
+    <dimen name="margin_12">12dp</dimen>
+    <dimen name="margin_half">8dp</dimen>
+    <dimen name="margin_6">6dp</dimen>
+
+
+    <dimen name="cell_width">72dp</dimen>
+
+    <dimen name="options_menu_item_size">72dp</dimen>
+</resources>
