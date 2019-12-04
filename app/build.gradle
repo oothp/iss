@@ -6,11 +6,17 @@ apply plugin: 'kotlin-android-extensions'
 
 apply plugin: 'kotlin-kapt'
 
+// Load keystore
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.1"
+
     defaultConfig {
-        applicationId "com.mig.myapplication"
+        applicationId 'com.mig.iss'
         minSdkVersion 19
         targetSdkVersion 29
         versionCode 1
@@ -19,17 +25,24 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            buildConfigField 'String', 'GOOGLE_MAPS_API_KEY', GOOGLE_MAPS_API_KEY
+            minifyEnabled true
+            debuggable true
         }
         debug {
-//            buildConfigField 'String', 'GOOGLE_MAPS_API_KEY', GOOGLE_MAPS_API_KEY
+            minifyEnabled true
         }
-//        release {
-//            minifyEnabled false
-//            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-//        }
+    }
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
+        debug {
+            storeFile file("../../../debug.keystore")
+        }
     }
     dataBinding {
         enabled = true
@@ -41,10 +54,9 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-
     // JSON Parsing
-    implementation 'com.google.code.gson:gson:2.8.5'
-    implementation 'com.squareup.retrofit2:converter-gson:2.2.0'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.squareup.retrofit2:converter-gson:2.6.2'
 
     // androidx
     implementation 'androidx.appcompat:appcompat:1.1.0'
