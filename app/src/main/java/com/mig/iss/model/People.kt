@@ -1,10 +1,8 @@
 package com.mig.iss.model
 
-import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
-import java.util.ArrayList
+import java.util.*
 
-@Keep
 class People {
 
     @SerializedName("number")

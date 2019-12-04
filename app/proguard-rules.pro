@@ -20,7 +20,4 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Keep the annotations
--keepattributes *Annotation*
-
--keep @androidx.annotation.Keep public class *
+-keep class com.mig.iss.model.** { *; }

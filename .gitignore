@@ -50,7 +50,7 @@ captures/
 *.keystore
 *.pepk
 keystore.properties
-iss_release_key
+iss_release
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
