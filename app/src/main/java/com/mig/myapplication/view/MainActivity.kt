@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         // region prepare people view inflation
         val inflater =
             binding.root.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val peopleViewBinding = ViewPeopleBinding.inflate(inflater, binding.peopleContainer, true)
+        val peopleViewBinding = ViewPeopleBinding.inflate(inflater)
 
         val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         peopleViewBinding.peopleList.adapter = adapter
