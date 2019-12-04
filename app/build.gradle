@@ -31,7 +31,7 @@ android {
             keyPassword keystoreProperties['keyPassword']
         }
         debug {
-            storeFile file("../../../debug.keystore")
+            storeFile file("../../../.android/debug.keystore")
         }
     }
     buildTypes {
@@ -41,14 +41,25 @@ android {
             signingConfig signingConfigs.release
         }
         debug {
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            minifyEnabled true
             signingConfig signingConfigs.debug
             applicationIdSuffix '.debug'
         }
     }
     dataBinding {
         enabled = true
+    }
+}
+
+android.applicationVariants.all { variant ->
+    def appName
+    if (project.hasProperty("applicationName")) {
+        appName = applicationName
+    } else {
+        appName = parent.name
+    }
+
+    variant.outputs.all { output ->
+        outputFileName = "${appName}-${output.baseName}-${variant.versionName}.apk"
     }
 }
 

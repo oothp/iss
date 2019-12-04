@@ -18,6 +18,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.mig.iss.BuildConfig
 import com.mig.iss.Const
 import com.mig.iss.R
 import com.mig.iss.databinding.ActivityMainBinding
@@ -41,6 +42,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+
+        // show dev label for dev builds.
+        binding.isDebug = BuildConfig.DEBUG
 
         // region prepare people view inflation
         val inflater =
