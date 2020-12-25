@@ -1,12 +1,16 @@
 package com.mig.iss.view
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
+import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,10 +18,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.MapStyleOptions
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import com.mig.iss.BuildConfig
 import com.mig.iss.Const
 import com.mig.iss.R
@@ -121,7 +122,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             if (viewModel.coordinates.value.latitude != 0.0 && viewModel.coordinates.value.longitude != 0.0) {
                 val markerOptions = MarkerOptions()
                     .position(viewModel.coordinates.value)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_iss))
+                    .icon(bitmapDescriptorFromVector(this))
+//                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.vector_space_station))
                     .anchor(0.5f, 0.5f)
 
                 it.addMarker(markerOptions)
@@ -129,6 +131,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
 
             binding.progress.visibility = View.GONE
+        }
+    }
+
+    private fun bitmapDescriptorFromVector(context: Context): BitmapDescriptor? {
+        return ContextCompat.getDrawable(context, R.drawable.vector_space_station)?.run {
+            setBounds(0, 0, intrinsicWidth, intrinsicHeight)
+            val bitmap = Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
+            draw(Canvas(bitmap))
+            BitmapDescriptorFactory.fromBitmap(bitmap)
         }
     }
 }
