@@ -51,6 +51,6 @@ class ApiServiceFromApi : ApiService2 {
     }
 
     companion object {
-        private val TAG = ApiServiceFromApi::class.java.simpleName
+        private val TAG = ApiServiceFromApi::class.java.simpleName + " ===>>"
     }
 }

@@ -12,7 +12,6 @@ object Const {
     const val ISS_POSITION = "/iss-now.json"
     const val PEOPLE_IN_SPACE = "/astros.json"
 
-    const val MAP_API_KEY = "AIzaSyBRloJZ8MOQhvyr-pCaCXvgnVirqf62Wik"
 
     // ======================================
 
