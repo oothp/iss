@@ -8,8 +8,8 @@ interface MainActivityViewModel {
     val items: Dynamic<List<ItemDataViewModel>>
     val coordinates: Dynamic<LatLng>
 
-    val progressPeople: Dynamic<Boolean>
-    val progressIssInfo: Dynamic<Boolean>
+    val peopleLoaded: Dynamic<Boolean>
+    val issInfoLoaded: Dynamic<Boolean>
 
 //    val showPeople: Dynamic<Boolean>
 //    val progress: Dynamic<Boolean>

@@ -25,20 +25,20 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
 
     //===
     private var loadingIssInfo: Boolean by observable(false) { _, _, new ->
-        progressIssInfo.value = new
+        issInfoLoaded.value = !new
     }
 
     private var loadingPeople: Boolean by observable(false) { _, _, new ->
-        progressPeople.value = new
+        peopleLoaded.value = !new
     }
-    override val progressPeople: Dynamic<Boolean> = Dynamic(false)
-    override val progressIssInfo: Dynamic<Boolean> = Dynamic(false)
+    override val peopleLoaded: Dynamic<Boolean> = Dynamic(false)
+    override val issInfoLoaded: Dynamic<Boolean> = Dynamic(false)
 
     // ===== binding
 
 //    val isDebug = BuildConfig.DEBUG
 
-    var onHandleClicked: () -> Unit = {}
+//    var onHandleClicked: () -> Unit = {}
 
     var peopleVisible: Boolean = false
 //    private var viewState: PeopleViewState by observable(PeopleViewState.NONE) { _, _, new ->
@@ -64,7 +64,6 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
         apiService.people.bind { people ->
             peopleEntity = people
             loadingPeople = false
-
 //            togglePeople()
         }
 

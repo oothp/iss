@@ -53,11 +53,28 @@
             android:id="@+id/people_container"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/margin_default"
-            android:layout_marginEnd="@dimen/margin_default"
+            android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
+
+        <FrameLayout
+            android:id="@+id/gesture_view"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/gradient_bg_bottom"
+            android:focusableInTouchMode="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_percent=".24"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <include
+                android:id="@+id/include"
+                layout="@layout/view_swipe"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -77,10 +94,10 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:padding="@dimen/margin_6"
-                android:textSize="26sp"
-                android:textStyle="bold"
                 android:text="@string/debug"
                 android:textColor="#FFE600"
+                android:textSize="26sp"
+                android:textStyle="bold"
                 android:visibility="@{isDebug ? View.VISIBLE : View.GONE}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

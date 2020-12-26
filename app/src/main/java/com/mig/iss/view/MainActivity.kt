@@ -1,21 +1,24 @@
 package com.mig.iss.view
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
+import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.transition.AutoTransition
+import androidx.transition.TransitionManager
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -28,6 +31,7 @@ import com.mig.iss.databinding.ActivityMainBinding
 import com.mig.iss.databinding.ViewPeopleBinding
 import com.mig.iss.viewmodel.MainViewModel
 import com.mig.iss.viewmodel.ViewModelFactory
+import kotlin.math.hypot
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -35,11 +39,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var map: GoogleMap? = null
 
     private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
-
     private val adapter by lazy { PeopleAdapter() }
+    private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
+
     private val refreshHandler = Handler(Looper.getMainLooper())
 
-    private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
+    private val constraint2 = ConstraintSet()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,44 +56,29 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        // region prepare people view inflation
-//        val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-//        val peopleViewBinding = ViewPeopleBinding.inflate(inflater)
-
+        // region people
         val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         peopleViewBinding.peopleList.adapter = adapter
         peopleViewBinding.peopleList.layoutManager = linearLayoutManager
         peopleViewBinding.peopleList.hasFixedSize()
+        binding.peopleContainer.addView(peopleViewBinding.root)
         // endregion
 
         // region observe dynamic values
         viewModel.items.bindAndFire { adapter.addItems(it) }
         viewModel.coordinates.bindAndFire { updateIssPosition() }
 
-//        viewModel.showPeople.bindAndFire {
-////        viewModel.progressPeople.bindAndFire {
-////            binding.handle.isClickable = !it
-//            when (it) {
-//                true -> {
-//                    if (binding.peopleContainer.childCount == 0)
-////                        binding.peopleContainer.addView(
-////                            peopleViewBinding.root, 0, ViewGroup.LayoutParams(
-////                                ViewGroup.LayoutParams.MATCH_PARENT,
-////                                ViewGroup.LayoutParams.WRAP_CONTENT
-////                            )
-////                        )
-//                        binding.peopleContainer.addView(peopleViewBinding.root)
-//                }
-//                false -> binding.peopleContainer.removeView(peopleViewBinding.root)
-//            }
-//        }
-
+        viewModel.peopleLoaded.bindAndFire { loaded ->
+            if (loaded) {
+                // people list ready - animate chevrons
+                startChevronAnimation()
+            }
 //        viewModel.progress.bindAndFire {
 //            binding.progress.visibility = when (it) {
 //                true -> View.VISIBLE
 //                false -> View.GONE
-//            }
-//        }
+
+        }
         // endregion
 
         // region map
@@ -96,9 +86,54 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         mapFragment.getMapAsync(this)
         // endregion
 
-//        viewModel.onHandleClicked = { togglePeople() }
-
         binding.executePendingBindings()
+    }
+
+    private fun startChevronAnimation(delay: Long = 0) {
+        val dur: Long = 260
+
+        binding.include.chevron1.animate().apply {
+            interpolator = LinearInterpolator()
+            duration = dur
+            startDelay = delay
+            alpha(1f)
+            start()
+        }
+
+        binding.include.chevron2.animate().apply {
+            interpolator = LinearInterpolator()
+            duration = dur
+            startDelay = dur + delay
+            alpha(1f)
+            setListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator?, isReverse: Boolean) {
+                    super.onAnimationEnd(animation)
+                    binding.include.chevron3.alpha = 1f
+                }
+            })
+            start()
+        }
+
+        binding.include.chevron3.animate().apply {
+            interpolator = LinearInterpolator()
+            duration = dur.times(2)
+            startDelay = dur.times(2).plus(delay)
+            alpha(10f)
+            translationY(-(binding.include.chevron3.height.toFloat() / 2))
+            setListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator?) {
+
+                    binding.include.chevron1.alpha = 0f
+                    binding.include.chevron2.alpha = 0f
+                    binding.include.chevron3.alpha = 0f
+
+                    binding.include.chevron3.translationY = 0f
+
+                    startChevronAnimation(150)
+                }
+            })
+            start()
+        }
     }
 
     override fun onMapReady(gmap: GoogleMap) {
@@ -115,30 +150,97 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 viewModel.refreshCurrentIssLocation()
                 refreshHandler.postDelayed(this, Const.LOCATION_REFRESH_INTERVAL)
             }
-        }, Const.INITIAL_REQUEST_DELAY) // get new coordinates
+        }, Const.INITIAL_REQUEST_DELAY)
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-//        viewModel.togglePeople() // show hide ppl
         togglePeopleContainer()
         return false
     }
 
     private fun togglePeopleContainer() {
         when (viewModel.peopleVisible) {
-            false -> {
-                if (binding.peopleContainer.childCount == 0)
-//                        binding.peopleContainer.addView(
-//                            peopleViewBinding.root, 0, ViewGroup.LayoutParams(
-//                                ViewGroup.LayoutParams.MATCH_PARENT,
-//                                ViewGroup.LayoutParams.WRAP_CONTENT
-//                            )
-//                        )
-                    binding.peopleContainer.addView(peopleViewBinding.root)
-            }
-            true -> binding.peopleContainer.removeView(peopleViewBinding.root)
+            false -> revealPeople()
+            true -> hidePeople()
         }
         viewModel.peopleVisible = !viewModel.peopleVisible
+    }
+
+    private fun revealPeople() {
+        // get the center for the clipping circle
+        val cx = binding.peopleContainer.width / 2
+        val cy = 0
+
+        // get the final radius for the clipping circle
+        val finalRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
+
+        // create the animator for this view (the start radius is zero)
+        val anim = ViewAnimationUtils.createCircularReveal(
+            binding.peopleContainer,
+            cx,
+            cy,
+            0f,
+            finalRadius
+        )
+        // make the view visible and start the animation
+        binding.peopleContainer.visibility = View.VISIBLE
+        anim.start()
+
+        // === animate map
+        constraint2.clone(binding.constraintLayout)
+        constraint2.connect(
+            binding.map.id,
+            ConstraintSet.BOTTOM,
+            binding.peopleContainer.id,
+            ConstraintSet.TOP
+        )
+
+        val transition = AutoTransition()
+//        transition.duration = 1000
+        TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
+        constraint2.applyTo(binding.constraintLayout)
+        // =====
+    }
+
+    private fun hidePeople() {
+        // get the center for the clipping circle
+        val cx = binding.peopleContainer.width / 2
+        val cy = binding.peopleContainer.height / 2
+
+        // get the initial radius for the clipping circle
+        val initialRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
+
+        // create the animation (the final radius is zero)
+        val anim = ViewAnimationUtils.createCircularReveal(
+            binding.peopleContainer,
+            cx,
+            cy,
+            initialRadius,
+            0f
+        )
+
+        // make the view invisible when the animation is done
+        anim.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                super.onAnimationEnd(animation)
+                binding.peopleContainer.visibility = View.INVISIBLE
+            }
+        })
+        anim.start()
+
+        constraint2.clone(binding.constraintLayout)
+        constraint2.connect(
+            binding.map.id,
+            ConstraintSet.BOTTOM,
+            ConstraintSet.PARENT_ID,
+            ConstraintSet.BOTTOM
+        )
+
+        val transition = AutoTransition()
+//        transition.duration = 1000
+        TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
+        constraint2.applyTo(binding.constraintLayout)
+
     }
 
     private fun updateIssPosition() {
