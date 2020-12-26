@@ -8,11 +8,10 @@ import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
-import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -32,12 +31,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var binding: ActivityMainBinding
     private var map: GoogleMap? = null
 
-    private val viewModel by lazy {
-        ViewModelProviders.of(this, ViewModelFactory()).get(MainViewModel::class.java)
-    }
+    private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
 
     private val adapter by lazy { PeopleAdapter() }
-
     private val refreshHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,7 +91,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onMapReady(gmap: GoogleMap) {
         map = gmap
-        gmap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, Const.MAP_STYLE_SILVER))
+        gmap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, Const.MAP_STYLE_NIGHT))
         gmap.setOnMarkerClickListener(this)
         gmap.uiSettings.isMapToolbarEnabled = false
         gmap.animateCamera(CameraUpdateFactory.zoomTo(4f))
@@ -123,7 +119,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 val markerOptions = MarkerOptions()
                     .position(viewModel.coordinates.value)
                     .icon(bitmapDescriptorFromVector(this))
-//                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.vector_space_station))
                     .anchor(0.5f, 0.5f)
 
                 it.addMarker(markerOptions)
@@ -135,9 +130,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun bitmapDescriptorFromVector(context: Context): BitmapDescriptor? {
-        return ContextCompat.getDrawable(context, R.drawable.vector_space_station)?.run {
+        return ContextCompat.getDrawable(context, R.drawable.vector_iss_light)?.run {
             setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-            val bitmap = Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
+            val bitmap =
+                Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
             draw(Canvas(bitmap))
             BitmapDescriptorFactory.fromBitmap(bitmap)
         }
