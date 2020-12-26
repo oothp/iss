@@ -2,12 +2,14 @@ package com.mig.iss.view
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.view.animation.LinearInterpolator
 import android.widget.Toast
@@ -31,6 +33,7 @@ import com.mig.iss.databinding.ActivityMainBinding
 import com.mig.iss.databinding.ViewPeopleBinding
 import com.mig.iss.viewmodel.MainViewModel
 import com.mig.iss.viewmodel.ViewModelFactory
+import kotlin.math.atan2
 import kotlin.math.hypot
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -46,9 +49,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private val constraint2 = ConstraintSet()
 
+    private lateinit var gestureScanner: GestureDetector
+
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+
+        gestureScanner = GestureDetector(binding.root.context, gestureListener)
 
         // show dev label for dev builds.
         binding.isDebug = BuildConfig.DEBUG
@@ -62,6 +70,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         peopleViewBinding.peopleList.layoutManager = linearLayoutManager
         peopleViewBinding.peopleList.hasFixedSize()
         binding.peopleContainer.addView(peopleViewBinding.root)
+        // endregion
+
+        // region gesture reg
+        binding.gestureView.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
         // endregion
 
         // region observe dynamic values
@@ -289,4 +301,103 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         else -> super.onOptionsItemSelected(item)
     }
 
+    // region gesture listener
+    private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
+        override fun onDown(e: MotionEvent?): Boolean {
+//            return super.onDown(e)
+            return true
+        }
+        override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+//            return super.onFling(e1, e2, velocityX, velocityY)
+            val x1 = e1.x
+            val y1 = e1.y
+
+            val x2 = e2.x
+            val y2 = e2.y
+
+            val direction: Direction = getDirection(x1, y1, x2, y2)
+            return onSwipe(direction)
+            // https://stackoverflow.com/a/26387629
+        }
+
+    }
+
+    fun onSwipe(direction: Direction?): Boolean {
+        Log.e("====>>", "===>> $direction")
+        return false
+    }
+
+    /**
+     * Given two points in the plane p1=(x1, x2) and p2=(y1, y1), this method
+     * returns the direction that an arrow pointing from p1 to p2 would have.
+     * @param x1 the x position of the first point
+     * @param y1 the y position of the first point
+     * @param x2 the x position of the second point
+     * @param y2 the y position of the second point
+     * @return the direction
+     */
+    private fun getDirection(x1: Float, y1: Float, x2: Float, y2: Float): Direction {
+        val angle = getAngle(x1, y1, x2, y2)
+        return Direction.fromAngle(angle)
+    }
+
+    /**
+     *
+     * Finds the angle between two points in the plane (x1,y1) and (x2, y2)
+     * The angle is measured with 0/360 being the X-axis to the right, angles
+     * increase counter clockwise.
+     *
+     * @param x1 the x position of the first point
+     * @param y1 the y position of the first point
+     * @param x2 the x position of the second point
+     * @param y2 the y position of the second point
+     * @return the angle between two points
+     */
+    private fun getAngle(x1: Float, y1: Float, x2: Float, y2: Float): Double {
+        val rad = atan2((y1 - y2).toDouble(), (x2 - x1).toDouble()) + Math.PI
+        return (rad * 180 / Math.PI + 180) % 360
+    }
+
+
+    enum class Direction {
+        UP, DOWN, LEFT, RIGHT;
+
+        companion object {
+            /**
+             * Returns a direction given an angle.
+             * Directions are defined as follows:
+             *
+             * Up: [45, 135]
+             * Right: [0,45] and [315, 360]
+             * Down: [225, 315]
+             * Left: [135, 225]
+             *
+             * @param angle an angle from 0 to 360 - e
+             * @return the direction of an angle
+             */
+            fun fromAngle(angle: Double): Direction {
+                return if (inRange(angle, 45f, 135f)) {
+                    UP
+                } else if (inRange(angle, 0f, 45f) || inRange(angle, 315f, 360f)) {
+                    RIGHT
+                } else if (inRange(angle, 225f, 315f)) {
+                    DOWN
+                } else {
+                    LEFT
+                }
+            }
+
+            /**
+             * @param angle an angle
+             * @param init the initial bound
+             * @param end the final bound
+             * @return returns true if the given angle is in the interval [init, end).
+             */
+            private fun inRange(angle: Double, init: Float, end: Float): Boolean {
+                return angle >= init && angle < end
+            }
+        }
+    }
+
+    // endregion
 }
