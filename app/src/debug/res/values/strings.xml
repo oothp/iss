@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ISS dev</string>
+
+    <string name="debug">DEBUG</string>
 </resources>

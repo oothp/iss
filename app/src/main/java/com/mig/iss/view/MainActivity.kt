@@ -7,7 +7,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
@@ -36,6 +39,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val adapter by lazy { PeopleAdapter() }
     private val refreshHandler = Handler(Looper.getMainLooper())
 
+    private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
@@ -43,9 +48,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         // show dev label for dev builds.
         binding.isDebug = BuildConfig.DEBUG
 
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+
         // region prepare people view inflation
-        val inflater = binding.root.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val peopleViewBinding = ViewPeopleBinding.inflate(inflater)
+//        val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+//        val peopleViewBinding = ViewPeopleBinding.inflate(inflater)
 
         val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         peopleViewBinding.peopleList.adapter = adapter
@@ -57,21 +65,23 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         viewModel.items.bindAndFire { adapter.addItems(it) }
         viewModel.coordinates.bindAndFire { updateIssPosition() }
 
-        viewModel.showPeople.bindAndFire {
-            when (it) {
-                true -> {
-                    if (binding.peopleContainer.childCount == 0)
-//                        binding.peopleContainer.addView(
-//                            peopleViewBinding.root, 0, ViewGroup.LayoutParams(
-//                                ViewGroup.LayoutParams.MATCH_PARENT,
-//                                ViewGroup.LayoutParams.WRAP_CONTENT
-//                            )
-//                        )
-                        binding.peopleContainer.addView(peopleViewBinding.root)
-                }
-                false -> binding.peopleContainer.removeView(peopleViewBinding.root)
-            }
-        }
+//        viewModel.showPeople.bindAndFire {
+////        viewModel.progressPeople.bindAndFire {
+////            binding.handle.isClickable = !it
+//            when (it) {
+//                true -> {
+//                    if (binding.peopleContainer.childCount == 0)
+////                        binding.peopleContainer.addView(
+////                            peopleViewBinding.root, 0, ViewGroup.LayoutParams(
+////                                ViewGroup.LayoutParams.MATCH_PARENT,
+////                                ViewGroup.LayoutParams.WRAP_CONTENT
+////                            )
+////                        )
+//                        binding.peopleContainer.addView(peopleViewBinding.root)
+//                }
+//                false -> binding.peopleContainer.removeView(peopleViewBinding.root)
+//            }
+//        }
 
 //        viewModel.progress.bindAndFire {
 //            binding.progress.visibility = when (it) {
@@ -85,6 +95,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
         // endregion
+
+//        viewModel.onHandleClicked = { togglePeople() }
 
         binding.executePendingBindings()
     }
@@ -107,8 +119,26 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        viewModel.togglePeople() // show hide ppl
+//        viewModel.togglePeople() // show hide ppl
+        togglePeopleContainer()
         return false
+    }
+
+    private fun togglePeopleContainer() {
+        when (viewModel.peopleVisible) {
+            false -> {
+                if (binding.peopleContainer.childCount == 0)
+//                        binding.peopleContainer.addView(
+//                            peopleViewBinding.root, 0, ViewGroup.LayoutParams(
+//                                ViewGroup.LayoutParams.MATCH_PARENT,
+//                                ViewGroup.LayoutParams.WRAP_CONTENT
+//                            )
+//                        )
+                    binding.peopleContainer.addView(peopleViewBinding.root)
+            }
+            true -> binding.peopleContainer.removeView(peopleViewBinding.root)
+        }
+        viewModel.peopleVisible = !viewModel.peopleVisible
     }
 
     private fun updateIssPosition() {
@@ -138,4 +168,23 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             BitmapDescriptorFactory.fromBitmap(bitmap)
         }
     }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
+        R.id.action_info -> {
+            Toast.makeText(binding.root.context, "INFO", Toast.LENGTH_SHORT).show()
+            true
+        }
+
+        R.id.action_refresh -> {
+            viewModel.getIssPeople()
+            true
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+
 }
