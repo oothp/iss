@@ -86,7 +86,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         // endregion
 
         // region gesture reg
-//        binding.gestureView.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
+//        binding.peopleContainer.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
+        binding.peopleContainer.setOnTouchListener(peopleBoxTouchListener)
         // endregion
 
         // region observe dynamic values
@@ -123,6 +124,59 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         // endregion
 
         binding.executePendingBindings()
+    }
+
+    private var dY = 0f
+    private var downY = 0f
+
+    @SuppressLint("ClickableViewAccessibility")
+    private val peopleBoxTouchListener = View.OnTouchListener { v, event ->
+
+        val containerArea = binding.root.height - binding.peopleContainer.height
+
+        when (event?.action) {
+            MotionEvent.ACTION_DOWN -> {
+                dY = v.y - event.rawY
+                downY = event.y
+                // stop animation if any
+                peopleViewBinding.handle.animation?.cancel()
+
+                //
+            }
+            MotionEvent.ACTION_MOVE -> {
+
+                if (downY < event.y) { // down
+                    if (v.y <= binding.guideline.y)
+                        v.animate()
+                            .y(event.rawY + dY)
+                            .setDuration(0)
+                            .start()
+
+                } else { // up
+                    if (v.y >= containerArea)
+                        v.animate()
+                            .y(event.rawY + dY)
+                            .setDuration(0)
+                            .start()
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                // snap
+                if (v.y >= binding.root.height - v.height.div(2)) {
+                    v.animate()
+                        .y(binding.guideline.y)
+                        .setDuration(100)
+                        .start()
+
+                } else {
+                    v.animate()
+                        .y(binding.root.height - binding.peopleContainer.height.toFloat())
+                        .setDuration(100)
+                        .start()
+                }
+            }
+        }
+        true
     }
 
     private fun startChevronAnimation(delay: Long = 0) {
