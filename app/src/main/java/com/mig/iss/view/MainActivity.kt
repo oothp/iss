@@ -4,13 +4,14 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.*
+import android.view.animation.AnimationUtils
 import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -31,17 +32,28 @@ import com.mig.iss.Const
 import com.mig.iss.R
 import com.mig.iss.databinding.ActivityMainBinding
 import com.mig.iss.databinding.ViewPeopleBinding
+import com.mig.iss.model.enums.Direction
 import com.mig.iss.viewmodel.MainViewModel
 import com.mig.iss.viewmodel.ViewModelFactory
 import kotlin.math.atan2
 import kotlin.math.hypot
+
+val Int.dp: Int
+    get() = (this / Resources.getSystem().displayMetrics.density).toInt()
+val Int.px: Int
+    get() = (this * Resources.getSystem().displayMetrics.density).toInt()
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private lateinit var binding: ActivityMainBinding
     private var map: GoogleMap? = null
 
-    private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
+    private val viewModel by lazy {
+        ViewModelProvider(
+            this,
+            ViewModelFactory()
+        ).get(MainViewModel::class.java)
+    }
     private val adapter by lazy { PeopleAdapter() }
     private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
 
@@ -57,6 +69,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
         gestureScanner = GestureDetector(binding.root.context, gestureListener)
+        val constraintSetPeople = ConstraintSet()
 
         // show dev label for dev builds.
         binding.isDebug = BuildConfig.DEBUG
@@ -73,7 +86,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         // endregion
 
         // region gesture reg
-        binding.gestureView.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
+//        binding.gestureView.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
         // endregion
 
         // region observe dynamic values
@@ -82,14 +95,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         viewModel.peopleLoaded.bindAndFire { loaded ->
             if (loaded) {
-                // people list ready - animate chevrons
-                startChevronAnimation()
-            }
-//        viewModel.progress.bindAndFire {
-//            binding.progress.visibility = when (it) {
-//                true -> View.VISIBLE
-//                false -> View.GONE
+                // people list ready -
 
+                binding.peopleContainer.visibility = View.INVISIBLE
+
+                binding.peopleContainer.post {
+                    constraintSetPeople.clone(binding.constraintLayout)
+                    constraintSetPeople.clear(binding.peopleContainer.id, ConstraintSet.BOTTOM)
+                    constraintSetPeople.connect(binding.peopleContainer.id, ConstraintSet.TOP, binding.guideline.id, ConstraintSet.TOP)
+                    val transition = AutoTransition()
+                    transition.duration = 50
+                    TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
+                    constraintSetPeople.applyTo(binding.constraintLayout)
+
+                    binding.peopleContainer.visibility = View.VISIBLE
+                    peopleViewBinding.handle.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse))
+                }
+
+//                startChevronAnimation()
+            }
         }
         // endregion
 
@@ -102,6 +126,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun startChevronAnimation(delay: Long = 0) {
+        binding.gestureView.visibility = View.VISIBLE
+
         val dur: Long = 260
 
         binding.include.chevron1.animate().apply {
@@ -166,22 +192,33 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        togglePeopleContainer()
+//        togglePeopleContainer()
         return false
     }
 
-    private fun togglePeopleContainer() {
-        when (viewModel.peopleVisible) {
-            false -> revealPeople()
-            true -> hidePeople()
+    private fun togglePeopleContainer(swipeDirection: Direction?) {
+        swipeDirection?.let {
+            when (it) {
+                Direction.UP -> {
+//                    if (!viewModel.peopleVisible)
+                    revealPeople()
+//                    viewModel.peopleVisible = !viewModel.peopleVisible
+                }
+                Direction.DOWN -> {
+//                    if (viewModel.peopleVisible)
+                    hidePeople()
+//                    viewModel.peopleVisible = !viewModel.peopleVisible
+                }
+            }
         }
-        viewModel.peopleVisible = !viewModel.peopleVisible
     }
 
     private fun revealPeople() {
-        // get the center for the clipping circle
+//        get the center for the clipping circle
         val cx = binding.peopleContainer.width / 2
-        val cy = 0
+        val cy = binding.root.height
+//        val cx = x.toDouble()
+//        val cy = y.toDouble()
 
         // get the final radius for the clipping circle
         val finalRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
@@ -189,8 +226,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         // create the animator for this view (the start radius is zero)
         val anim = ViewAnimationUtils.createCircularReveal(
             binding.peopleContainer,
-            cx,
-            cy,
+            cx.toInt(),
+            cy.toInt(),
             0f,
             finalRadius
         )
@@ -199,18 +236,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         anim.start()
 
         // === animate map
-        constraint2.clone(binding.constraintLayout)
-        constraint2.connect(
-            binding.map.id,
-            ConstraintSet.BOTTOM,
-            binding.peopleContainer.id,
-            ConstraintSet.TOP
-        )
-
-        val transition = AutoTransition()
-//        transition.duration = 1000
-        TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
-        constraint2.applyTo(binding.constraintLayout)
+//        constraint2.clone(binding.constraintLayout)
+//        constraint2.connect(
+//            binding.map.id,
+//            ConstraintSet.BOTTOM,
+//            binding.peopleContainer.id,
+//            ConstraintSet.TOP
+//        )
+//
+//        val transition = AutoTransition()
+////        transition.duration = 1000
+//        TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
+//        constraint2.applyTo(binding.constraintLayout)
         // =====
     }
 
@@ -304,41 +341,36 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     // region gesture listener
     private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent?): Boolean {
-//            return super.onDown(e)
             return true
         }
-        override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-//            return super.onFling(e1, e2, velocityX, velocityY)
-            val x1 = e1.x
-            val y1 = e1.y
 
-            val x2 = e2.x
-            val y2 = e2.y
+        override fun onFling(
+            e1: MotionEvent,
+            e2: MotionEvent,
+            velocityX: Float,
+            velocityY: Float
+        ): Boolean {
+            super.onFling(e1, e2, velocityX, velocityY)
 
-            val direction: Direction = getDirection(x1, y1, x2, y2)
-            return onSwipe(direction)
             // https://stackoverflow.com/a/26387629
+//            if (isSwipeUp(e1.x, e1.y, e2.x, e2.y)) togglePeopleContainer()
+            togglePeopleContainer(getSwipeDirection(e1.x, e1.y, e2.x, e2.y))
+
+            return false
         }
-
     }
 
-    fun onSwipe(direction: Direction?): Boolean {
-        Log.e("====>>", "===>> $direction")
-        return false
-    }
-
-    /**
-     * Given two points in the plane p1=(x1, x2) and p2=(y1, y1), this method
-     * returns the direction that an arrow pointing from p1 to p2 would have.
-     * @param x1 the x position of the first point
-     * @param y1 the y position of the first point
-     * @param x2 the x position of the second point
-     * @param y2 the y position of the second point
-     * @return the direction
-     */
-    private fun getDirection(x1: Float, y1: Float, x2: Float, y2: Float): Direction {
+    private fun getSwipeDirection(x1: Float, y1: Float, x2: Float, y2: Float): Direction? {
         val angle = getAngle(x1, y1, x2, y2)
-        return Direction.fromAngle(angle)
+        return when {
+            angle >= 45f && angle < 135f -> Direction.UP
+            angle >= 225f && angle < 315f -> Direction.DOWN
+            else -> null
+        }
+//        if (inRange(angle, 45f, 135f)) { UP
+//        } else if (inRange(angle, 0f, 45f) || inRange(angle, 315f, 360f)) { RIGHT
+//        } else if (inRange(angle, 225f, 315f)) { DOWN
+//        } else { LEFT }
     }
 
     /**
@@ -357,47 +389,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val rad = atan2((y1 - y2).toDouble(), (x2 - x1).toDouble()) + Math.PI
         return (rad * 180 / Math.PI + 180) % 360
     }
-
-
-    enum class Direction {
-        UP, DOWN, LEFT, RIGHT;
-
-        companion object {
-            /**
-             * Returns a direction given an angle.
-             * Directions are defined as follows:
-             *
-             * Up: [45, 135]
-             * Right: [0,45] and [315, 360]
-             * Down: [225, 315]
-             * Left: [135, 225]
-             *
-             * @param angle an angle from 0 to 360 - e
-             * @return the direction of an angle
-             */
-            fun fromAngle(angle: Double): Direction {
-                return if (inRange(angle, 45f, 135f)) {
-                    UP
-                } else if (inRange(angle, 0f, 45f) || inRange(angle, 315f, 360f)) {
-                    RIGHT
-                } else if (inRange(angle, 225f, 315f)) {
-                    DOWN
-                } else {
-                    LEFT
-                }
-            }
-
-            /**
-             * @param angle an angle
-             * @param init the initial bound
-             * @param end the final bound
-             * @return returns true if the given angle is in the interval [init, end).
-             */
-            private fun inRange(angle: Double, init: Float, end: Float): Boolean {
-                return angle >= init && angle < end
-            }
-        }
-    }
-
     // endregion
+
+    var x = 0f
+    var y = 0f
 }

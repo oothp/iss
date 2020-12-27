@@ -5,6 +5,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.mig.iss.model.Dynamic
 import com.mig.iss.model.IssPosition
 import com.mig.iss.model.People
+import com.mig.iss.model.enums.PeopleViewState
 import com.mig.iss.retrofit.ApiServiceFromApi
 import kotlin.properties.Delegates.observable
 
@@ -36,26 +37,19 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
 
     // ===== binding
 
-//    val isDebug = BuildConfig.DEBUG
+    var peopleState: Dynamic<PeopleViewState> = Dynamic(PeopleViewState.NONE)
 
-//    var onHandleClicked: () -> Unit = {}
-
-    var peopleVisible: Boolean = false
-//    private var viewState: PeopleViewState by observable(PeopleViewState.NONE) { _, _, new ->
+    private var viewState: PeopleViewState by observable(PeopleViewState.NONE) { _, _, new ->
 //        showPeople.value = new == PeopleViewState.VISIBLE
-//    }
-
-//    private var requestInProgress: Boolean by observable(false) { _, _, new ->
-//        progress.value = new
-//    }
-
-//    override val showPeople: Dynamic<Boolean> = Dynamic(false)
-//    override val progress: Dynamic<Boolean> = Dynamic(false)
+        peopleState.value = new
+    }
 
     override val items: Dynamic<List<ItemDataViewModel>> = Dynamic(ArrayList())
     override val coordinates: Dynamic<LatLng> = Dynamic(LatLng(0.0, 0.0))
 
     init {
+        viewState = PeopleViewState.NONE
+
         apiService.currentInfo.bind { info ->
             issPosition = info?.issPosition
             loadingIssInfo = false
@@ -64,6 +58,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
         apiService.people.bind { people ->
             peopleEntity = people
             loadingPeople = false
+            viewState = PeopleViewState.CLOSED
 //            togglePeople()
         }
 

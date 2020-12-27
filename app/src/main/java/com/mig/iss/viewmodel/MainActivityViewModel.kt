@@ -11,9 +11,6 @@ interface MainActivityViewModel {
     val peopleLoaded: Dynamic<Boolean>
     val issInfoLoaded: Dynamic<Boolean>
 
-//    val showPeople: Dynamic<Boolean>
-//    val progress: Dynamic<Boolean>
-
     fun refreshCurrentIssLocation()
     fun getIssPeople()
 }
