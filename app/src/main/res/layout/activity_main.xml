@@ -54,16 +54,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            app:layout_constraintGuide_end="46dp" />
-            <!--  46dp is a sum of handle height and margins -->
+            app:layout_constraintGuide_end="@dimen/summary_view_height" />
 
         <FrameLayout
             android:id="@+id/people_container"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@drawable/gradient_bg"
-            android:clickable="true"
-            android:focusable="true"
+            android:layout_marginStart="@dimen/margin_half"
+            android:layout_marginEnd="@dimen/margin_half"
+            android:background="@drawable/bg_people"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"

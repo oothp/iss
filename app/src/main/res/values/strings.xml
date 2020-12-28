@@ -9,4 +9,7 @@
     <string name="action_more">More</string>
 
     <string name="handle">Handle</string>
+
+    <string name="currently">Currently over\u0020</string>
+    <string name="humans">Humans x %1$s</string>
 </resources>

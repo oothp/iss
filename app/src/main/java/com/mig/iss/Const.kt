@@ -21,6 +21,6 @@ object Const {
     const val MAP_STYLE_DARK = R.raw.map_style_dark_json
     const val MAP_STYLE_RETRO = R.raw.map_style_retro_json
 
-    const val LOCATION_REFRESH_INTERVAL: Long = 3500
+    const val LOCATION_REFRESH_INTERVAL: Long = 5000
     const val INITIAL_REQUEST_DELAY: Long = 7000
 }

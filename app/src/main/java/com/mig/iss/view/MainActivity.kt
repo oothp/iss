@@ -7,9 +7,9 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.location.Geocoder
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.view.animation.AnimationUtils
 import android.view.animation.LinearInterpolator
@@ -29,14 +29,20 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.mig.iss.BuildConfig
 import com.mig.iss.Const
+import com.mig.iss.Const.LOCATION_REFRESH_INTERVAL
 import com.mig.iss.R
 import com.mig.iss.databinding.ActivityMainBinding
 import com.mig.iss.databinding.ViewPeopleBinding
 import com.mig.iss.model.enums.Direction
 import com.mig.iss.viewmodel.MainViewModel
 import com.mig.iss.viewmodel.ViewModelFactory
+import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.hypot
+
 
 val Int.dp: Int
     get() = (this / Resources.getSystem().displayMetrics.density).toInt()
@@ -46,18 +52,12 @@ val Int.px: Int
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private lateinit var binding: ActivityMainBinding
+
     private var map: GoogleMap? = null
 
-    private val viewModel by lazy {
-        ViewModelProvider(
-            this,
-            ViewModelFactory()
-        ).get(MainViewModel::class.java)
-    }
+    private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
     private val adapter by lazy { PeopleAdapter() }
     private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
-
-    private val refreshHandler = Handler(Looper.getMainLooper())
 
     private val constraint2 = ConstraintSet()
 
@@ -67,8 +67,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+//        binding.lifecycleOwner = this
+
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(this)
 
         gestureScanner = GestureDetector(binding.root.context, gestureListener)
+
         val constraintSetPeople = ConstraintSet()
 
         // show dev label for dev builds.
@@ -77,27 +82,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        // region people
+        // region people recyclerview setup
         val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         peopleViewBinding.peopleList.adapter = adapter
         peopleViewBinding.peopleList.layoutManager = linearLayoutManager
+        peopleViewBinding.peopleList.suppressLayout(true)
         peopleViewBinding.peopleList.hasFixedSize()
         binding.peopleContainer.addView(peopleViewBinding.root)
         // endregion
 
         // region gesture reg
-//        binding.peopleContainer.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
+        //        binding.peopleContainer.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
         binding.peopleContainer.setOnTouchListener(peopleBoxTouchListener)
         // endregion
 
         // region observe dynamic values
-        viewModel.items.bindAndFire { adapter.addItems(it) }
-        viewModel.coordinates.bindAndFire { updateIssPosition() }
+        viewModel.humansOnIss.bindAndFire { adapter.addItems(it) }
+        viewModel.coordinates.bindAndFire { updateIssPosition(it) }
 
         viewModel.peopleLoaded.bindAndFire { loaded ->
             if (loaded) {
                 // people list ready -
-
                 binding.peopleContainer.visibility = View.INVISIBLE
 
                 binding.peopleContainer.post {
@@ -112,15 +117,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     binding.peopleContainer.visibility = View.VISIBLE
                     peopleViewBinding.handle.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse))
                 }
-
-//                startChevronAnimation()
             }
         }
-        // endregion
 
-        // region map
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
+        viewModel.issDataLoaded.bindAndFire { loaded ->
+            if (loaded) {
+                val geocoder = Geocoder(this, Locale.getDefault())
+                viewModel.getUpdatedTerritory(geocoder)
+            }
+        }
+
+        viewModel.territory.bindAndFire {
+//            peopleViewBinding.territoryLabel.text = it?.let { territory ->
+                Log.e("====>>", "territory: $it")
+//                resources.getString(R.string.currently).plus(territory)
+//            } ?: ""
+        }
+
+        viewModel.country.bindAndFire { peopleViewBinding.countryLabel.text = it }
+        viewModel.humanCount.bindAndFire { peopleViewBinding.headCountLabel.text = String.format(getString(R.string.humans), it) }
         // endregion
 
         binding.executePendingBindings()
@@ -131,48 +146,42 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     @SuppressLint("ClickableViewAccessibility")
     private val peopleBoxTouchListener = View.OnTouchListener { v, event ->
-
-        val containerArea = binding.root.height - binding.peopleContainer.height
-
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
                 dY = v.y - event.rawY
                 downY = event.y
-                // stop animation if any
-                peopleViewBinding.handle.animation?.cancel()
 
-                //
+                peopleViewBinding.handle.animation?.cancel() // stop animation if any
             }
             MotionEvent.ACTION_MOVE -> {
-
                 if (downY < event.y) { // down
                     if (v.y <= binding.guideline.y)
                         v.animate()
-                            .y(event.rawY + dY)
-                            .setDuration(0)
-                            .start()
+                                .y(event.rawY + dY)
+                                .setDuration(0)
+                                .start()
 
                 } else { // up
-                    if (v.y >= containerArea)
+                    if (v.y >= binding.root.height - binding.peopleContainer.height)
                         v.animate()
-                            .y(event.rawY + dY)
-                            .setDuration(0)
-                            .start()
+                                .y(event.rawY + dY)
+                                .setDuration(0)
+                                .start()
                 }
             }
             MotionEvent.ACTION_UP -> {
                 // snap
                 if (v.y >= binding.root.height - v.height.div(2)) {
                     v.animate()
-                        .y(binding.guideline.y)
-                        .setDuration(100)
-                        .start()
+                            .y(binding.guideline.y)
+                            .setDuration(100)
+                            .start()
 
                 } else {
                     v.animate()
-                        .y(binding.root.height - binding.peopleContainer.height.toFloat())
-                        .setDuration(100)
-                        .start()
+                            .y(binding.root.height - binding.peopleContainer.height.toFloat())
+                            .setDuration(100)
+                            .start()
                 }
             }
         }
@@ -230,23 +239,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onMapReady(gmap: GoogleMap) {
         map = gmap
-        gmap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, Const.MAP_STYLE_NIGHT))
-        gmap.setOnMarkerClickListener(this)
-        gmap.uiSettings.isMapToolbarEnabled = false
-        gmap.animateCamera(CameraUpdateFactory.zoomTo(4f))
+        map?.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, Const.MAP_STYLE_NIGHT))
+        map?.setOnMarkerClickListener(this)
+        map?.uiSettings?.isMapToolbarEnabled = true
+        map?.uiSettings?.isCompassEnabled = true
+//        gmap.animateCamera(CameraUpdateFactory.zoomTo(4f))
 
-        updateIssPosition()
+//        updateIssPosition()
 
-        refreshHandler.postDelayed(object : Runnable {
-            override fun run() {
-                viewModel.refreshCurrentIssLocation()
-                refreshHandler.postDelayed(this, Const.LOCATION_REFRESH_INTERVAL)
-            }
-        }, Const.INITIAL_REQUEST_DELAY)
+        val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+        scheduler.scheduleAtFixedRate({
+            viewModel.refreshIssData()
+        }, 1000, LOCATION_REFRESH_INTERVAL, TimeUnit.MILLISECONDS)
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-//        togglePeopleContainer()
+        // nothing yet
         return false
     }
 
@@ -278,25 +286,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val finalRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
 
         // create the animator for this view (the start radius is zero)
-        val anim = ViewAnimationUtils.createCircularReveal(
-            binding.peopleContainer,
-            cx.toInt(),
-            cy.toInt(),
-            0f,
-            finalRadius
-        )
+        val anim = ViewAnimationUtils.createCircularReveal(binding.peopleContainer, cx, cy, 0f, finalRadius)
         // make the view visible and start the animation
         binding.peopleContainer.visibility = View.VISIBLE
         anim.start()
 
         // === animate map
 //        constraint2.clone(binding.constraintLayout)
-//        constraint2.connect(
-//            binding.map.id,
-//            ConstraintSet.BOTTOM,
-//            binding.peopleContainer.id,
-//            ConstraintSet.TOP
-//        )
+//        constraint2.connect(binding.map.id, ConstraintSet.BOTTOM, binding.peopleContainer.id, ConstraintSet.TOP )
 //
 //        val transition = AutoTransition()
 ////        transition.duration = 1000
@@ -314,13 +311,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val initialRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
 
         // create the animation (the final radius is zero)
-        val anim = ViewAnimationUtils.createCircularReveal(
-            binding.peopleContainer,
-            cx,
-            cy,
-            initialRadius,
-            0f
-        )
+        val anim = ViewAnimationUtils.createCircularReveal(binding.peopleContainer, cx, cy, initialRadius, 0f)
 
         // make the view invisible when the animation is done
         anim.addListener(object : AnimatorListenerAdapter() {
@@ -332,12 +323,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         anim.start()
 
         constraint2.clone(binding.constraintLayout)
-        constraint2.connect(
-            binding.map.id,
-            ConstraintSet.BOTTOM,
-            ConstraintSet.PARENT_ID,
-            ConstraintSet.BOTTOM
-        )
+        constraint2.connect(binding.map.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
 
         val transition = AutoTransition()
 //        transition.duration = 1000
@@ -346,29 +332,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     }
 
-    private fun updateIssPosition() {
+    private fun updateIssPosition(latlng: LatLng) {
         map?.let {
             it.clear()
 
-            if (viewModel.coordinates.value.latitude != 0.0 && viewModel.coordinates.value.longitude != 0.0) {
-                val markerOptions = MarkerOptions()
-                    .position(viewModel.coordinates.value)
-                    .icon(bitmapDescriptorFromVector(this))
+            // todo move
+            val markerOptions = MarkerOptions()
+                    .position(latlng)
+                    .icon(bitmapDescriptorFromVector())
                     .anchor(0.5f, 0.5f)
 
-                it.addMarker(markerOptions)
-                it.animateCamera(CameraUpdateFactory.newLatLng(viewModel.coordinates.value))
-            }
+            it.addMarker(markerOptions)
+            it.animateCamera(CameraUpdateFactory.newLatLng(latlng))
 
             binding.progress.visibility = View.GONE
         }
     }
 
-    private fun bitmapDescriptorFromVector(context: Context): BitmapDescriptor? {
-        return ContextCompat.getDrawable(context, R.drawable.vector_iss_light)?.run {
+    private fun bitmapDescriptorFromVector(): BitmapDescriptor? {
+        return ContextCompat.getDrawable(binding.root.context, R.drawable.vector_iss_light)?.run {
             setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-            val bitmap =
-                Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
+            val bitmap = Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
             draw(Canvas(bitmap))
             BitmapDescriptorFactory.fromBitmap(bitmap)
         }
@@ -398,12 +382,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             return true
         }
 
-        override fun onFling(
-            e1: MotionEvent,
-            e2: MotionEvent,
-            velocityX: Float,
-            velocityY: Float
-        ): Boolean {
+        override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
             super.onFling(e1, e2, velocityX, velocityY)
 
             // https://stackoverflow.com/a/26387629
@@ -444,7 +423,4 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         return (rad * 180 / Math.PI + 180) % 360
     }
     // endregion
-
-    var x = 0f
-    var y = 0f
 }
