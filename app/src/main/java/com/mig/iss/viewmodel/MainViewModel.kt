@@ -102,9 +102,10 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
         Log.e("===>>", "${addresses[0]}")
 
         val addressLine = addresses[0].getAddressLine(0)
-        val countryName: String = addresses[0].countryName ?: ""
 
-        country.value = countryName
+        country.value = addresses[0].countryName ?: addressLine
+
+        val countryName: String = addresses[0].countryName ?: ""
 
         return when {
             addresses[0].subAdminArea != null -> if (!addresses[0].subAdminArea.contains(countryName))
@@ -128,7 +129,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
             else
                 addressLine
 
-            else -> return addresses[0].countryName ?: ""
+            else -> return addresses[0].countryName
         }
     }
 
