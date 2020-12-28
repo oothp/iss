@@ -128,7 +128,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
             else
                 addressLine
 
-            else -> return addresses[0].countryName ?: ""
+            else -> return addresses[0].countryName ?: addressLine
         }
     }
 
