@@ -7,11 +7,10 @@ package com.mig.iss
 object Const {
 
     const val API_SPACE_BASE = "http://api.open-notify.org"
-//    const val API_SPACE_BASE = "http://getbible.net/json?"
 
     const val ISS_POSITION = "/iss-now.json"
     const val PEOPLE_IN_SPACE = "/astros.json"
-
+    const val ISS_PASS = "/iss-pass.json"
 
     // ======================================
 

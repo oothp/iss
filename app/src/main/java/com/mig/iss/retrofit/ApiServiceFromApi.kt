@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.mig.iss.Const
 import com.mig.iss.model.IssData
 import com.mig.iss.model.Dynamic
+import com.mig.iss.model.PassTimeData
 import com.mig.iss.model.People
 import retrofit2.Call
 import retrofit2.Callback
@@ -14,6 +15,7 @@ class ApiServiceFromApi : ApiService2 {
 
     override val people = Dynamic<People?>(null)
     override val issData = Dynamic<IssData?>(null)
+    override val issPassTimeData = Dynamic<PassTimeData?>(null)
 
     override fun getIssData() {
 
@@ -48,6 +50,23 @@ class ApiServiceFromApi : ApiService2 {
                 Log.e(TAG, "[Response FAIL]: $t")
             }
         })
+    }
+
+    override fun getPassTimes(lat: Double, lon: Double, alt: Long?, n: Int?) {
+        RetrofitClient.getClient(Const.API_SPACE_BASE)
+            .create(ApiService::class.java)
+            .getPassTimes(lat, lon, alt, n).enqueue(object : Callback<PassTimeData> {
+
+                    override fun onResponse(call: Call<PassTimeData>, response: Response<PassTimeData>) {
+                        Log.e(TAG, "[RESPONSE getPassTimes]: ${Gson().toJson(response.body())}")
+                        issPassTimeData.value = response.body()
+                    }
+
+                    override fun onFailure(call: Call<PassTimeData>, t: Throwable) {
+                        t.printStackTrace()
+                        Log.e(TAG, "[Response getPassTimes FAIL]: $t")
+                    }
+                })
     }
 
     companion object {
