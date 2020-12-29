@@ -1,10 +1,14 @@
 package com.mig.iss.viewmodel
 
+import android.location.Address
+import android.location.Geocoder
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.maps.model.LatLng
 import com.mig.iss.model.Dynamic
-import com.mig.iss.model.IssPosition
+import com.mig.iss.model.IssData
 import com.mig.iss.model.People
+import com.mig.iss.model.enums.PeopleViewState
 import com.mig.iss.retrofit.ApiServiceFromApi
 import kotlin.properties.Delegates.observable
 
@@ -13,83 +17,129 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
     private val apiService by lazy { ApiServiceFromApi() }
 
     private var peopleEntity: People? by observable(null as People?) { _, _, new ->
-        items.value = new?.people?.map { ItemDataViewModel(it) } ?: listOf()
+        humansOnIss.value = new?.people?.map { ItemDataViewModel(it) } ?: listOf()
     }
 
-    private var issPosition: IssPosition? by observable(null as IssPosition?) { _, _, new ->
+    private var issData: IssData? by observable(null as IssData?) { _, _, new ->
         coordinates.value = LatLng(
-            new?.latitude?.toDouble() ?: 0.0,
-            new?.longitude?.toDouble() ?: 0.0
+                new?.issPosition?.latitude?.toDouble() ?: 0.0,
+                new?.issPosition?.longitude?.toDouble() ?: 0.0
         )
     }
 
+    var territory: Dynamic<String?> = Dynamic(null)
+//    var country: Dynamic<String> = Dynamic("")
+    var humanCount: Dynamic<String> = Dynamic("")
+
     //===
-    private var loadingIssInfo: Boolean by observable(false) { _, _, new ->
-        progressIssInfo.value = new
+    private var loadingIssData: Boolean by observable(false) { _, _, new ->
+        issDataLoaded.value = !new
     }
 
     private var loadingPeople: Boolean by observable(false) { _, _, new ->
-        progressPeople.value = new
+        peopleLoaded.value = !new
     }
-    override val progressPeople: Dynamic<Boolean> = Dynamic(false)
-    override val progressIssInfo: Dynamic<Boolean> = Dynamic(false)
+
+    override val peopleLoaded: Dynamic<Boolean> = Dynamic(false)
+    override val issDataLoaded: Dynamic<Boolean> = Dynamic(false)
 
     // ===== binding
 
-//    val isDebug = BuildConfig.DEBUG
+    var peopleState: Dynamic<PeopleViewState> = Dynamic(PeopleViewState.NONE)
 
-    var onHandleClicked: () -> Unit = {}
+    private var viewState: PeopleViewState by observable(PeopleViewState.NONE) { _, _, new ->
+////        showPeople.value = new == PeopleViewState.VISIBLE
+////        peopleState.value = new
+    }
 
-    var peopleVisible: Boolean = false
-//    private var viewState: PeopleViewState by observable(PeopleViewState.NONE) { _, _, new ->
-//        showPeople.value = new == PeopleViewState.VISIBLE
-//    }
-
-//    private var requestInProgress: Boolean by observable(false) { _, _, new ->
-//        progress.value = new
-//    }
-
-//    override val showPeople: Dynamic<Boolean> = Dynamic(false)
-//    override val progress: Dynamic<Boolean> = Dynamic(false)
-
-    override val items: Dynamic<List<ItemDataViewModel>> = Dynamic(ArrayList())
+    override val humansOnIss: Dynamic<List<ItemDataViewModel>> = Dynamic(ArrayList())
     override val coordinates: Dynamic<LatLng> = Dynamic(LatLng(0.0, 0.0))
 
     init {
-        apiService.currentInfo.bind { info ->
-            issPosition = info?.issPosition
-            loadingIssInfo = false
+        viewState = PeopleViewState.NONE
+
+        apiService.issData.bind {
+            issData = it
+            loadingIssData = false
         }
 
         apiService.people.bind { people ->
             peopleEntity = people
             loadingPeople = false
+            viewState = PeopleViewState.CLOSED
 
-//            togglePeople()
+            humanCount.value = people?.number.toString()
         }
 
-        refreshCurrentIssLocation()
         getIssPeople()
     }
 
-    override fun refreshCurrentIssLocation() {
-        loadingIssInfo = true
-        apiService.getCurrentLocation()
+    fun getUpdatedTerritory(geocoder: Geocoder) {
+        issData?.let {
+
+            val lat = it.issPosition.latitude.toDouble()
+            val lon = it.issPosition.longitude.toDouble()
+
+            val addresses = geocoder.getFromLocation(lat, lon, 1)
+
+            if (addresses.isNotEmpty()) {
+
+                it.territory = buildTerritoryString(addresses)
+
+                if (territory.value != it.territory) {
+                    territory.value = it.territory
+                }
+            } else {
+                Log.e("=====>>", "TERRITORY no value")
+                territory.value = null
+//                country.value = ""
+            }
+        }
+    }
+
+    private fun buildTerritoryString(addresses: List<Address>): String {
+
+        Log.e("===>>", "${addresses[0]}")
+
+        val addressLine = addresses[0].getAddressLine(0)
+
+//        country.value = addresses[0].countryName ?: addressLine
+
+        val countryName: String = addresses[0].countryName ?: ""
+
+        return when {
+            addresses[0].subAdminArea != null -> if (!addresses[0].subAdminArea.contains(countryName))
+                addresses[0].subAdminArea.plus(", ").plus(countryName)
+            else
+                addresses[0].subAdminArea
+
+            addresses[0].locality != null -> if (!addresses[0].locality.contains(countryName))
+                addresses[0].locality.plus(", ").plus(countryName)
+            else
+                addresses[0].locality
+
+            addresses[0].adminArea != null ->
+                if (!addresses[0].adminArea.contains(countryName))
+                    addresses[0].adminArea.plus(", ").plus(countryName)
+                else
+                    addresses[0].adminArea
+
+            addressLine.length < 100 -> if (!addressLine.contains(countryName) && addressLine != countryName)
+                addressLine.plus(", ").plus(countryName)
+            else
+                addressLine
+
+            else -> return addresses[0].countryName
+        }
+    }
+
+    override fun refreshIssData() {
+        loadingIssData = true
+        apiService.getIssData()
     }
 
     override fun getIssPeople() {
         loadingPeople = true
         apiService.getPeopleOnISS()
     }
-
-    fun togglePeople() {
-//        viewState = when (viewState) {
-//            PeopleViewState.NONE, PeopleViewState.HIDDEN -> PeopleViewState.VISIBLE
-//            PeopleViewState.VISIBLE -> PeopleViewState.HIDDEN
-//        }
-    }
-
-    //    fun togglePeople() {
-//        onHandleClicked()
-//    }
 }

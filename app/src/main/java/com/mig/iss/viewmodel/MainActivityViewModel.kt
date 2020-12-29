@@ -5,15 +5,12 @@ import com.mig.iss.model.Dynamic
 
 interface MainActivityViewModel {
 
-    val items: Dynamic<List<ItemDataViewModel>>
+    val humansOnIss: Dynamic<List<ItemDataViewModel>>
     val coordinates: Dynamic<LatLng>
 
-    val progressPeople: Dynamic<Boolean>
-    val progressIssInfo: Dynamic<Boolean>
+    val peopleLoaded: Dynamic<Boolean>
+    val issDataLoaded: Dynamic<Boolean>
 
-//    val showPeople: Dynamic<Boolean>
-//    val progress: Dynamic<Boolean>
-
-    fun refreshCurrentIssLocation()
+    fun refreshIssData()
     fun getIssPeople()
 }

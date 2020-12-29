@@ -9,4 +9,6 @@
     <dimen name="cell_width">72dp</dimen>
 
     <dimen name="options_menu_item_size">72dp</dimen>
+
+    <dimen name="summary_view_height">80dp</dimen>
 </resources>
