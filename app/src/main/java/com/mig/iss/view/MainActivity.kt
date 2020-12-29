@@ -127,11 +127,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         viewModel.territory.bindAndFire {
 //            peopleViewBinding.territoryLabel.text = it?.let { territory ->
                 Log.e("====>>", "territory: $it")
+            peopleViewBinding.countryLabel.text = it
 //                resources.getString(R.string.currently).plus(territory)
 //            } ?: ""
         }
 
-        viewModel.country.bindAndFire { peopleViewBinding.countryLabel.text = it }
+//        viewModel.country.bindAndFire { peopleViewBinding.countryLabel.text = it }
         viewModel.humanCount.bindAndFire { peopleViewBinding.headCountLabel.text = String.format(getString(R.string.humans), it) }
         // endregion
 
@@ -187,7 +188,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onMapReady(gmap: GoogleMap) {
         map = gmap
-        map?.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, Const.MAP_STYLE_NIGHT))
+        map?.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, Const.MAP_STYLE_AUBERGINE))
         map?.setOnMarkerClickListener(this)
         map?.uiSettings?.isMapToolbarEnabled = true
         map?.uiSettings?.isCompassEnabled = true

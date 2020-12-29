@@ -59,9 +59,8 @@
         <FrameLayout
             android:id="@+id/people_container"
             android:layout_width="0dp"
+            android:elevation="4dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/margin_half"
-            android:layout_marginEnd="@dimen/margin_half"
             android:background="@drawable/bg_people"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"

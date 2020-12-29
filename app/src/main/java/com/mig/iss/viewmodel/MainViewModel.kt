@@ -28,7 +28,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
     }
 
     var territory: Dynamic<String?> = Dynamic(null)
-    var country: Dynamic<String> = Dynamic("")
+//    var country: Dynamic<String> = Dynamic("")
     var humanCount: Dynamic<String> = Dynamic("")
 
     //===
@@ -92,7 +92,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
             } else {
                 Log.e("=====>>", "TERRITORY no value")
                 territory.value = null
-                country.value = ""
+//                country.value = ""
             }
         }
     }
@@ -103,7 +103,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
 
         val addressLine = addresses[0].getAddressLine(0)
 
-        country.value = addresses[0].countryName ?: addressLine
+//        country.value = addresses[0].countryName ?: addressLine
 
         val countryName: String = addresses[0].countryName ?: ""
 
