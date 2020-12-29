@@ -28,7 +28,8 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
     }
 
     var territory: Dynamic<String?> = Dynamic(null)
-//    var country: Dynamic<String> = Dynamic("")
+
+    //    var country: Dynamic<String> = Dynamic("")
     var humanCount: Dynamic<String> = Dynamic("")
 
     //===
@@ -72,6 +73,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
         }
 
         getIssPeople()
+//        apiService.getPassTimes(23.89273703098297, 54.91271014509626, 30, 4) // ready
     }
 
     fun getUpdatedTerritory(geocoder: Geocoder) {
