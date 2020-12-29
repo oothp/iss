@@ -4,7 +4,6 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.location.Geocoder
@@ -12,7 +11,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.view.animation.AnimationUtils
-import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintSet
@@ -43,11 +41,10 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.hypot
 
-
-val Int.dp: Int
-    get() = (this / Resources.getSystem().displayMetrics.density).toInt()
-val Int.px: Int
-    get() = (this * Resources.getSystem().displayMetrics.density).toInt()
+//val Int.dp: Int
+//    get() = (this / Resources.getSystem().displayMetrics.density).toInt()
+//val Int.px: Int
+//    get() = (this * Resources.getSystem().displayMetrics.density).toInt()
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -186,55 +183,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
         }
         true
-    }
-
-    private fun startChevronAnimation(delay: Long = 0) {
-        binding.gestureView.visibility = View.VISIBLE
-
-        val dur: Long = 260
-
-        binding.include.chevron1.animate().apply {
-            interpolator = LinearInterpolator()
-            duration = dur
-            startDelay = delay
-            alpha(1f)
-            start()
-        }
-
-        binding.include.chevron2.animate().apply {
-            interpolator = LinearInterpolator()
-            duration = dur
-            startDelay = dur + delay
-            alpha(1f)
-            setListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator?, isReverse: Boolean) {
-                    super.onAnimationEnd(animation)
-                    binding.include.chevron3.alpha = 1f
-                }
-            })
-            start()
-        }
-
-        binding.include.chevron3.animate().apply {
-            interpolator = LinearInterpolator()
-            duration = dur.times(2)
-            startDelay = dur.times(2).plus(delay)
-            alpha(10f)
-            translationY(-(binding.include.chevron3.height.toFloat() / 2))
-            setListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator?) {
-
-                    binding.include.chevron1.alpha = 0f
-                    binding.include.chevron2.alpha = 0f
-                    binding.include.chevron3.alpha = 0f
-
-                    binding.include.chevron3.translationY = 0f
-
-                    startChevronAnimation(150)
-                }
-            })
-            start()
-        }
     }
 
     override fun onMapReady(gmap: GoogleMap) {
