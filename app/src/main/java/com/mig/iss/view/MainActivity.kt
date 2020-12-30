@@ -14,6 +14,7 @@ import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -36,7 +37,6 @@ import com.mig.iss.viewmodel.MainViewModel
 import com.mig.iss.viewmodel.ViewModelFactory
 import java.util.*
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -50,7 +50,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private lateinit var binding: ActivityMainBinding
 
-    private var map: GoogleMap? = null
+    private lateinit var map: GoogleMap
+    private var mapMarker: Marker? = null
 
     private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
     private val adapter by lazy { PeopleAdapter() }
@@ -126,7 +127,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         viewModel.territory.bindAndFire {
 //            peopleViewBinding.territoryLabel.text = it?.let { territory ->
-                Log.e("====>>", "territory: $it")
+            Log.e("====>>", "territory: $it")
             peopleViewBinding.countryLabel.text = it
 //                resources.getString(R.string.currently).plus(territory)
 //            } ?: ""
@@ -174,32 +175,53 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                             .y(binding.guideline.y)
                             .setDuration(100)
                             .start()
+                    map.setPadding(0, binding.toolbar.height, 0, binding.constraintLayout.height - binding.guideline.y.toInt())
 
                 } else {
                     v.animate()
                             .y(binding.root.height - binding.peopleContainer.height.toFloat())
                             .setDuration(100)
                             .start()
+                    map.setPadding(0, binding.toolbar.height, 0, binding.peopleContainer.height)
                 }
             }
         }
         true
     }
 
-    override fun onMapReady(gmap: GoogleMap) {
-        map = gmap
-        map?.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, Const.MAP_STYLE_AUBERGINE))
-        map?.setOnMarkerClickListener(this)
-        map?.uiSettings?.isMapToolbarEnabled = true
-        map?.uiSettings?.isCompassEnabled = true
-//        gmap.animateCamera(CameraUpdateFactory.zoomTo(4f))
+    override fun onMapReady(gmap: GoogleMap?) {
+        map = gmap ?: return
 
-//        updateIssPosition()
+        with(gmap) {
 
-        val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
-        scheduler.scheduleAtFixedRate({
-            viewModel.refreshIssData()
-        }, 1000, LOCATION_REFRESH_INTERVAL, TimeUnit.MILLISECONDS)
+            setMapStyle(MapStyleOptions.loadRawResourceStyle(binding.root.context, Const.MAP_STYLE_AUBERGINE))
+            setOnMarkerClickListener(this@MainActivity)
+            setPadding(0, binding.toolbar.height, 0, binding.constraintLayout.height - binding.guideline.y.toInt())
+
+            uiSettings.isMapToolbarEnabled = false
+            uiSettings.isIndoorLevelPickerEnabled  = true
+            uiSettings.isCompassEnabled = true
+            uiSettings.isZoomGesturesEnabled  = true
+            uiSettings.isZoomControlsEnabled = true
+
+            mapMarker = map.addMarker(MarkerOptions()
+                    .position(LatLng(0.0, 0.0))
+                    .anchor(0.5f, 0.5f)
+                    .icon(bitmapDescriptorFromVector())
+                    .title(viewModel.humanCount.value))
+
+            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
+                viewModel.refreshIssData()
+            }, 1000, LOCATION_REFRESH_INTERVAL, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    private fun checkReadyThen(function: () -> Unit) {
+        if (!::map.isInitialized) {
+            Toast.makeText(this, "map not ready", Toast.LENGTH_SHORT).show()
+        } else {
+            function()
+        }
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
@@ -282,19 +304,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun updateIssPosition(latlng: LatLng) {
-        map?.let {
-            it.clear()
-
-            // todo move
-            val markerOptions = MarkerOptions()
-                    .position(latlng)
-                    .icon(bitmapDescriptorFromVector())
-                    .anchor(0.5f, 0.5f)
-
-            it.addMarker(markerOptions)
-            it.animateCamera(CameraUpdateFactory.newLatLng(latlng))
-
+        checkReadyThen {
             binding.progress.visibility = View.GONE
+            mapMarker?.position = latlng
+            map.animateCamera(CameraUpdateFactory.newLatLng(latlng))
         }
     }
 

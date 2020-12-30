@@ -93,7 +93,7 @@ class MainViewModel : ViewModel(), MainActivityViewModel {
                 }
             } else {
                 Log.e("=====>>", "TERRITORY no value")
-                territory.value = null
+                territory.value = "¯\\_(ツ)_/¯"
 //                country.value = ""
             }
         }
