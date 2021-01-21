@@ -14,7 +14,6 @@ import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintSet
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -54,6 +53,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var mapMarker: Marker? = null
 
     private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
+    private val pagerAdapter by lazy { ViewPagerAdapter(binding.root.context) }
     private val adapter by lazy { PeopleAdapter() }
     private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
 
@@ -86,12 +86,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         peopleViewBinding.peopleList.layoutManager = linearLayoutManager
         peopleViewBinding.peopleList.suppressLayout(true)
         peopleViewBinding.peopleList.hasFixedSize()
-        binding.peopleContainer.addView(peopleViewBinding.root)
+//        binding.infoContainer.addView(peopleViewBinding.root) todo FIX
         // endregion
+
+        binding.pager.adapter = pagerAdapter
+        binding.pager.offscreenPageLimit = 1
+        binding.pager.post { binding.pager.setCurrentItem(1, false) } // workaround for pager.currentItem = x
 
         // region gesture reg
         //        binding.peopleContainer.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
-        binding.peopleContainer.setOnTouchListener(peopleBoxTouchListener)
+        binding.infoContainer.setOnTouchListener(peopleBoxTouchListener)
         // endregion
 
         // region observe dynamic values
@@ -101,18 +105,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         viewModel.peopleLoaded.bindAndFire { loaded ->
             if (loaded) {
                 // people list ready -
-                binding.peopleContainer.visibility = View.INVISIBLE
+                binding.infoContainer.visibility = View.INVISIBLE
 
-                binding.peopleContainer.post {
+                binding.infoContainer.post {
                     constraintSetPeople.clone(binding.constraintLayout)
-                    constraintSetPeople.clear(binding.peopleContainer.id, ConstraintSet.BOTTOM)
-                    constraintSetPeople.connect(binding.peopleContainer.id, ConstraintSet.TOP, binding.guideline.id, ConstraintSet.TOP)
+                    constraintSetPeople.clear(binding.infoContainer.id, ConstraintSet.BOTTOM)
+                    constraintSetPeople.connect(binding.infoContainer.id, ConstraintSet.TOP, binding.guideline.id, ConstraintSet.TOP)
                     val transition = AutoTransition()
                     transition.duration = 50
                     TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
                     constraintSetPeople.applyTo(binding.constraintLayout)
 
-                    binding.peopleContainer.visibility = View.VISIBLE
+                    binding.infoContainer.visibility = View.VISIBLE
                     peopleViewBinding.handle.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse))
                 }
             }
@@ -161,7 +165,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                 .start()
 
                 } else { // up
-                    if (v.y >= binding.root.height - binding.peopleContainer.height)
+                    if (v.y >= binding.root.height - binding.infoContainer.height)
                         v.animate()
                                 .y(event.rawY + dY)
                                 .setDuration(0)
@@ -179,10 +183,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
                 } else {
                     v.animate()
-                            .y(binding.root.height - binding.peopleContainer.height.toFloat())
+                            .y(binding.root.height - binding.infoContainer.height.toFloat())
                             .setDuration(100)
                             .start()
-                    map.setPadding(0, binding.toolbar.height, 0, binding.peopleContainer.height)
+                    map.setPadding(0, binding.toolbar.height, 0, binding.infoContainer.height)
                 }
             }
         }
@@ -248,7 +252,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun revealPeople() {
 //        get the center for the clipping circle
-        val cx = binding.peopleContainer.width / 2
+        val cx = binding.infoContainer.width / 2
         val cy = binding.root.height
 //        val cx = x.toDouble()
 //        val cy = y.toDouble()
@@ -257,9 +261,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val finalRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
 
         // create the animator for this view (the start radius is zero)
-        val anim = ViewAnimationUtils.createCircularReveal(binding.peopleContainer, cx, cy, 0f, finalRadius)
+        val anim = ViewAnimationUtils.createCircularReveal(binding.infoContainer, cx, cy, 0f, finalRadius)
         // make the view visible and start the animation
-        binding.peopleContainer.visibility = View.VISIBLE
+        binding.infoContainer.visibility = View.VISIBLE
         anim.start()
 
         // === animate map
@@ -275,20 +279,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun hidePeople() {
         // get the center for the clipping circle
-        val cx = binding.peopleContainer.width / 2
-        val cy = binding.peopleContainer.height / 2
+        val cx = binding.infoContainer.width / 2
+        val cy = binding.infoContainer.height / 2
 
         // get the initial radius for the clipping circle
         val initialRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
 
         // create the animation (the final radius is zero)
-        val anim = ViewAnimationUtils.createCircularReveal(binding.peopleContainer, cx, cy, initialRadius, 0f)
+        val anim = ViewAnimationUtils.createCircularReveal(binding.infoContainer, cx, cy, initialRadius, 0f)
 
         // make the view invisible when the animation is done
         anim.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
                 super.onAnimationEnd(animation)
-                binding.peopleContainer.visibility = View.INVISIBLE
+                binding.infoContainer.visibility = View.INVISIBLE
             }
         })
         anim.start()
