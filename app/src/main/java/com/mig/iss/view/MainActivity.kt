@@ -15,9 +15,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.transition.AutoTransition
 import androidx.transition.TransitionManager
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.hypot
 
+
 //val Int.dp: Int
 //    get() = (this / Resources.getSystem().displayMetrics.density).toInt()
 //val Int.px: Int
@@ -53,8 +54,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var mapMarker: Marker? = null
 
     private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
-    private val pagerAdapter by lazy { ViewPagerAdapter(binding.root.context) }
-    private val adapter by lazy { PeopleAdapter() }
+    private val pagerAdapter by lazy { ViewPagerAdapter() }
+//    private val adapter by lazy { PeopleAdapter() }
     private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
 
     private val constraint2 = ConstraintSet()
@@ -81,11 +82,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
         // region people recyclerview setup
-        val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        peopleViewBinding.peopleList.adapter = adapter
-        peopleViewBinding.peopleList.layoutManager = linearLayoutManager
-        peopleViewBinding.peopleList.suppressLayout(true)
-        peopleViewBinding.peopleList.hasFixedSize()
+//        val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+//        peopleViewBinding.peopleList.adapter = adapter
+//        peopleViewBinding.peopleList.layoutManager = linearLayoutManager
+//        peopleViewBinding.peopleList.suppressLayout(true)
+//        peopleViewBinding.peopleList.hasFixedSize()
 //        binding.infoContainer.addView(peopleViewBinding.root) todo FIX
         // endregion
 
@@ -93,13 +94,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         binding.pager.offscreenPageLimit = 1
         binding.pager.post { binding.pager.setCurrentItem(1, false) } // workaround for pager.currentItem = x
 
+        val pageMarginPx = resources.getDimensionPixelOffset(R.dimen.page_margin)
+        val offsetPx = resources.getDimensionPixelOffset(R.dimen.page_offset)
+        binding.pager.setPageTransformer { page, position ->
+            val offset = position * -(2 * offsetPx + pageMarginPx)
+            page.translationX = when (ViewCompat.getLayoutDirection(binding.pager) == ViewCompat.LAYOUT_DIRECTION_RTL) {
+                true -> -offset
+                false -> offset
+            }
+        }
         // region gesture reg
         //        binding.peopleContainer.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
         binding.infoContainer.setOnTouchListener(peopleBoxTouchListener)
         // endregion
 
         // region observe dynamic values
-        viewModel.humansOnIss.bindAndFire { adapter.addItems(it) }
+        viewModel.humansOnIss.bindAndFire { pagerAdapter.addPeople(it) }
         viewModel.coordinates.bindAndFire { updateIssPosition(it) }
 
         viewModel.peopleLoaded.bindAndFire { loaded ->

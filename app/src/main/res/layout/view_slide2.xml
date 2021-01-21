@@ -5,6 +5,9 @@
     <FrameLayout
         android:id="@+id/fl"
         android:layout_width="match_parent"
+        android:background="#caf"
+        android:layout_marginStart="@dimen/page_margin"
+        android:layout_marginEnd="@dimen/page_margin"
         android:layout_height="match_parent">
 
         <TextView
