@@ -53,7 +53,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
     private val pagerAdapter by lazy { ViewPagerAdapter() }
-//    private val adapter by lazy { PeopleAdapter() }
+
+    // private val adapter by lazy { PeopleAdapter() }
     private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
 
     private val constraint2 = ConstraintSet()
@@ -64,7 +65,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-//        binding.lifecycleOwner = this
+        // binding.lifecycleOwner = this
 
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -80,12 +81,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
         // region people recyclerview setup
-//        val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-//        peopleViewBinding.peopleList.adapter = adapter
-//        peopleViewBinding.peopleList.layoutManager = linearLayoutManager
-//        peopleViewBinding.peopleList.suppressLayout(true)
-//        peopleViewBinding.peopleList.hasFixedSize()
-//        binding.infoContainer.addView(peopleViewBinding.root) todo FIX
+        // val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        // peopleViewBinding.peopleList.adapter = adapter
+        // peopleViewBinding.peopleList.layoutManager = linearLayoutManager
+        // peopleViewBinding.peopleList.suppressLayout(true)
+        // peopleViewBinding.peopleList.hasFixedSize()
+        // binding.infoContainer.addView(peopleViewBinding.root) todo FIX
         // endregion
 
         binding.pager.adapter = pagerAdapter
@@ -102,7 +103,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
         }
         // region gesture reg
-        //        binding.peopleContainer.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
+        // binding.peopleContainer.setOnTouchListener { _, event -> gestureScanner.onTouchEvent(event) }
         binding.infoContainer.setOnTouchListener(peopleBoxTouchListener)
         // endregion
 
@@ -162,34 +163,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
             MotionEvent.ACTION_MOVE -> {
                 if (downY < event.y) { // down
-                    if (v.y <= binding.guideline.y)
-                        v.animate()
-                                .y(event.rawY + dY)
-                                .setDuration(0)
-                                .start()
+                    if (v.y <= binding.guideline.y) v.animate().y(event.rawY + dY).setDuration(0).start()
 
                 } else { // up
-                    if (v.y >= binding.root.height - binding.infoContainer.height)
-                        v.animate()
-                                .y(event.rawY + dY)
-                                .setDuration(0)
-                                .start()
+                    if (v.y >= binding.root.height - binding.infoContainer.height) v.animate().y(event.rawY + dY).setDuration(0).start()
                 }
             }
             MotionEvent.ACTION_UP -> {
                 // snap
                 if (v.y >= binding.root.height - v.height.div(2)) {
-                    v.animate()
-                            .y(binding.guideline.y)
-                            .setDuration(100)
-                            .start()
+                    v.animate().y(binding.guideline.y).setDuration(100).start()
                     map.setPadding(0, binding.toolbar.height, 0, binding.constraintLayout.height - binding.guideline.y.toInt())
 
                 } else {
-                    v.animate()
-                            .y(binding.root.height - binding.infoContainer.height.toFloat())
-                            .setDuration(100)
-                            .start()
+                    v.animate().y(binding.root.height - binding.infoContainer.height.toFloat()).setDuration(100).start()
                     map.setPadding(0, binding.toolbar.height, 0, binding.infoContainer.height)
                 }
             }
@@ -207,20 +194,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             setPadding(0, binding.toolbar.height, 0, binding.constraintLayout.height - binding.guideline.y.toInt())
 
             uiSettings.isMapToolbarEnabled = false
-            uiSettings.isIndoorLevelPickerEnabled  = true
+            uiSettings.isIndoorLevelPickerEnabled = true
             uiSettings.isCompassEnabled = true
-            uiSettings.isZoomGesturesEnabled  = true
+            uiSettings.isZoomGesturesEnabled = true
             uiSettings.isZoomControlsEnabled = true
 
-            mapMarker = map.addMarker(MarkerOptions()
-                    .position(LatLng(0.0, 0.0))
-                    .anchor(0.5f, 0.5f)
-                    .icon(bitmapDescriptorFromVector())
-                    .title(viewModel.humanCount.value))
+            mapMarker = map.addMarker(MarkerOptions().position(LatLng(0.0, 0.0))
+                                          .anchor(0.5f, 0.5f)
+                                          .icon(bitmapDescriptorFromVector())
+                                          .title(viewModel.humanCount.value))
 
-            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
-                viewModel.refreshIssData()
-            }, 1000, LOCATION_REFRESH_INTERVAL, TimeUnit.MILLISECONDS)
+            Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate({ viewModel.refreshIssData() }, 1000, LOCATION_REFRESH_INTERVAL, TimeUnit.MILLISECONDS)
         }
     }
 
@@ -241,25 +226,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         swipeDirection?.let {
             when (it) {
                 Direction.UP -> {
-//                    if (!viewModel.peopleVisible)
+                    // if (!viewModel.peopleVisible)
                     revealPeople()
-//                    viewModel.peopleVisible = !viewModel.peopleVisible
+                    // viewModel.peopleVisible = !viewModel.peopleVisible
                 }
                 Direction.DOWN -> {
-//                    if (viewModel.peopleVisible)
+                    // if (viewModel.peopleVisible)
                     hidePeople()
-//                    viewModel.peopleVisible = !viewModel.peopleVisible
+                    // viewModel.peopleVisible = !viewModel.peopleVisible
                 }
             }
         }
     }
 
     private fun revealPeople() {
-//        get the center for the clipping circle
+        // get the center for the clipping circle
         val cx = binding.infoContainer.width / 2
         val cy = binding.root.height
-//        val cx = x.toDouble()
-//        val cy = y.toDouble()
+        // val cx = x.toDouble()
+        // val cy = y.toDouble()
 
         // get the final radius for the clipping circle
         val finalRadius = hypot(cx.toDouble(), cy.toDouble()).toFloat()
@@ -271,13 +256,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         anim.start()
 
         // === animate map
-//        constraint2.clone(binding.constraintLayout)
-//        constraint2.connect(binding.map.id, ConstraintSet.BOTTOM, binding.peopleContainer.id, ConstraintSet.TOP )
-//
-//        val transition = AutoTransition()
-////        transition.duration = 1000
-//        TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
-//        constraint2.applyTo(binding.constraintLayout)
+        // constraint2.clone(binding.constraintLayout)
+        // constraint2.connect(binding.map.id, ConstraintSet.BOTTOM, binding.peopleContainer.id, ConstraintSet.TOP )
+        //
+        // val transition = AutoTransition()
+        //// transition.duration = 1000
+        // TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
+        // constraint2.applyTo(binding.constraintLayout)
         // =====
     }
 
@@ -305,7 +290,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         constraint2.connect(binding.map.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
 
         val transition = AutoTransition()
-//        transition.duration = 1000
+        //        transition.duration = 1000
         TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
         constraint2.applyTo(binding.constraintLayout)
 
@@ -354,11 +339,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
             super.onFling(e1, e2, velocityX, velocityY)
-
             // https://stackoverflow.com/a/26387629
-//            if (isSwipeUp(e1.x, e1.y, e2.x, e2.y)) togglePeopleContainer()
+            // if (isSwipeUp(e1.x, e1.y, e2.x, e2.y)) togglePeopleContainer()
             togglePeopleContainer(getSwipeDirection(e1.x, e1.y, e2.x, e2.y))
-
             return false
         }
     }
@@ -370,10 +353,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             angle >= 225f && angle < 315f -> Direction.DOWN
             else -> null
         }
-//        if (inRange(angle, 45f, 135f)) { UP
-//        } else if (inRange(angle, 0f, 45f) || inRange(angle, 315f, 360f)) { RIGHT
-//        } else if (inRange(angle, 225f, 315f)) { DOWN
-//        } else { LEFT }
+        // if (inRange(angle, 45f, 135f)) { UP
+        // } else if (inRange(angle, 0f, 45f) || inRange(angle, 315f, 360f)) { RIGHT
+        // } else if (inRange(angle, 225f, 315f)) { DOWN
+        // } else { LEFT }
     }
 
     /**
