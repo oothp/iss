@@ -18,29 +18,30 @@ class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>()
     }
 
     private var peopleList = listOf<ItemDataViewModel>()
+    private var currentIssLocation: String? = null
+    private var timeLeft: String? = null
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MainViewHolder =
-        when (viewType) {
-            TYPE_1 -> {
-                val layoutInflater = LayoutInflater.from(parent.context)
-                Slide1Holder(ViewSlide1Binding.inflate(layoutInflater, parent, false))
-            }
-            TYPE_2 -> {
-                val layoutInflater = LayoutInflater.from(parent.context)
-                Slide2Holder(ViewSlide2Binding.inflate(layoutInflater, parent, false))
-            }
-            TYPE_3 -> {
-                val layoutInflater = LayoutInflater.from(parent.context)
-                Slide3Holder(ViewSlide3Binding.inflate(layoutInflater, parent, false))
-            }
-            else -> throw IllegalArgumentException("Illegal Item View Type")
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MainViewHolder = when (viewType) {
+        TYPE_1 -> {
+            val layoutInflater = LayoutInflater.from(parent.context)
+            Slide1Holder(ViewSlide1Binding.inflate(layoutInflater, parent, false))
         }
+        TYPE_2 -> {
+            val layoutInflater = LayoutInflater.from(parent.context)
+            Slide2Holder(ViewSlide2Binding.inflate(layoutInflater, parent, false))
+        }
+        TYPE_3 -> {
+            val layoutInflater = LayoutInflater.from(parent.context)
+            Slide3Holder(ViewSlide3Binding.inflate(layoutInflater, parent, false))
+        }
+        else -> throw IllegalArgumentException("Illegal Item View Type")
+    }
 
     override fun onBindViewHolder(holder: MainViewHolder, position: Int) {
         when (holder) {
             is Slide1Holder -> holder.bind(peopleList)
-            is Slide2Holder -> holder.bind("222222")
-            is Slide3Holder -> holder.bind("33333")
+            is Slide2Holder -> holder.bind(currentIssLocation)
+            is Slide3Holder -> holder.bind(timeLeft)
         }
     }
 
@@ -55,25 +56,22 @@ class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>()
 
     open inner class MainViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
 
-    inner class Slide1Holder(private val binding: ViewSlide1Binding) :
-        MainViewHolder(binding.root) {
-        fun bind(items: List<ItemDataViewModel>) {
-            items.forEach { binding.tv.text = "${binding.tv.text}\n${it.name}" }
+    inner class Slide1Holder(private val binding: ViewSlide1Binding) : MainViewHolder(binding.root) {
+        fun bind(items: List<ItemDataViewModel>?) {
+            items?.forEach { binding.tv.text = "${binding.tv.text}\n${it.name}" } // todo
             binding.executePendingBindings()
         }
     }
 
-    inner class Slide2Holder(private val binding: ViewSlide2Binding) :
-        MainViewHolder(binding.root) {
-        fun bind(str: String) {
+    inner class Slide2Holder(private val binding: ViewSlide2Binding) : MainViewHolder(binding.root) {
+        fun bind(str: String?) {
             binding.tv.text = str
             binding.executePendingBindings()
         }
     }
 
-    inner class Slide3Holder(private val binding: ViewSlide3Binding) :
-        MainViewHolder(binding.root) {
-        fun bind(str: String) {
+    inner class Slide3Holder(private val binding: ViewSlide3Binding) : MainViewHolder(binding.root) {
+        fun bind(str: String?) {
             binding.tv.text = str
             binding.executePendingBindings()
         }
@@ -82,5 +80,15 @@ class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>()
     fun addPeople(people: List<ItemDataViewModel>) {
         peopleList = people
         this.notifyItemChanged(0)
+    }
+
+    fun updateCurrentIssLocation(currentLocation: String) {
+        currentIssLocation = currentLocation
+        this.notifyItemChanged(1)
+    }
+
+    fun updateCountdown(timeUntil: String) {
+        timeLeft = timeUntil
+        this.notifyItemChanged(2)
     }
 }

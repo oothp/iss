@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.location.Geocoder
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.view.animation.AnimationUtils
 import android.widget.Toast
@@ -39,7 +38,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.hypot
-
 
 //val Int.dp: Int
 //    get() = (this / Resources.getSystem().displayMetrics.density).toInt()
@@ -140,17 +138,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         viewModel.territory.bindAndFire {
-//            peopleViewBinding.territoryLabel.text = it?.let { territory ->
-            Log.e("====>>", "territory: $it")
-            peopleViewBinding.countryLabel.text = it
-//                resources.getString(R.string.currently).plus(territory)
-//            } ?: ""
+            pagerAdapter.updateCurrentIssLocation(it ?: "")
         }
 
-//        viewModel.country.bindAndFire { peopleViewBinding.countryLabel.text = it }
-        viewModel.humanCount.bindAndFire { peopleViewBinding.headCountLabel.text = String.format(getString(R.string.humans), it) }
+        viewModel.humanCount.bindAndFire {
+//            peopleViewBinding.headCountLabel.text = String.format(getString(R.string.humans), it)
+        }
         // endregion
-
         binding.executePendingBindings()
     }
 
