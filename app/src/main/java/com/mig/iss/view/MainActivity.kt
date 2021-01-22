@@ -3,13 +3,11 @@ package com.mig.iss.view
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.location.Geocoder
 import android.os.Bundle
 import android.view.*
-import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintSet
@@ -17,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.AutoTransition
 import androidx.transition.TransitionManager
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -29,7 +28,6 @@ import com.mig.iss.Const
 import com.mig.iss.Const.LOCATION_REFRESH_INTERVAL
 import com.mig.iss.R
 import com.mig.iss.databinding.ActivityMainBinding
-import com.mig.iss.databinding.ViewPeopleBinding
 import com.mig.iss.model.enums.Direction
 import com.mig.iss.viewmodel.MainViewModel
 import com.mig.iss.viewmodel.ViewModelFactory
@@ -38,6 +36,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.hypot
+import kotlin.math.roundToInt
+import kotlin.properties.Delegates
 
 //val Int.dp: Int
 //    get() = (this / Resources.getSystem().displayMetrics.density).toInt()
@@ -54,9 +54,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val viewModel by lazy { ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java) }
     private val pagerAdapter by lazy { ViewPagerAdapter() }
 
-    // private val adapter by lazy { PeopleAdapter() }
-    private val peopleViewBinding by lazy { ViewPeopleBinding.inflate(getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater) }
-
     private val constraint2 = ConstraintSet()
 
     private lateinit var gestureScanner: GestureDetector
@@ -72,22 +69,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         gestureScanner = GestureDetector(binding.root.context, gestureListener)
 
-        val constraintSetPeople = ConstraintSet()
+        val constraintSetPanel = ConstraintSet()
 
         // show dev label for dev builds.
         binding.isDebug = BuildConfig.DEBUG
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
-
-        // region people recyclerview setup
-        // val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        // peopleViewBinding.peopleList.adapter = adapter
-        // peopleViewBinding.peopleList.layoutManager = linearLayoutManager
-        // peopleViewBinding.peopleList.suppressLayout(true)
-        // peopleViewBinding.peopleList.hasFixedSize()
-        // binding.infoContainer.addView(peopleViewBinding.root) todo FIX
-        // endregion
 
         binding.pager.adapter = pagerAdapter
         binding.pager.offscreenPageLimit = 1
@@ -113,21 +101,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         viewModel.peopleLoaded.bindAndFire { loaded ->
             if (loaded) {
-                // people list ready -
+                //                binding.pager.visibility = View.INVISIBLE
                 binding.infoContainer.visibility = View.INVISIBLE
+                binding.pager.post { changeConstraints(binding.pager, constraintSetPanel) }
+                binding.infoContainer.post { changeConstraints(binding.infoContainer, constraintSetPanel) }
+                binding.infoContainer.visibility = View.VISIBLE
 
-                binding.infoContainer.post {
-                    constraintSetPeople.clone(binding.constraintLayout)
-                    constraintSetPeople.clear(binding.infoContainer.id, ConstraintSet.BOTTOM)
-                    constraintSetPeople.connect(binding.infoContainer.id, ConstraintSet.TOP, binding.guideline.id, ConstraintSet.TOP)
-                    val transition = AutoTransition()
-                    transition.duration = 50
-                    TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
-                    constraintSetPeople.applyTo(binding.constraintLayout)
-
-                    binding.infoContainer.visibility = View.VISIBLE
-                    peopleViewBinding.handle.startAnimation(AnimationUtils.loadAnimation(this, R.anim.pulse))
-                }
+                pagerViewWidth = (binding.pager.getChildAt(0) as RecyclerView).layoutManager?.findViewByPosition(1)?.width?.toFloat() ?: 0f
             }
         }
 
@@ -138,46 +118,92 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
         }
 
-        viewModel.territory.bindAndFire {
-            pagerAdapter.updateCurrentIssLocation(it ?: "")
-        }
+        viewModel.territory.bindAndFire { pagerAdapter.updateCurrentIssLocation(it ?: "") }
 
         viewModel.humanCount.bindAndFire {
-//            peopleViewBinding.headCountLabel.text = String.format(getString(R.string.humans), it)
+            //            peopleViewBinding.headCountLabel.text = String.format(getString(R.string.humans), it)
         }
         // endregion
         binding.executePendingBindings()
     }
 
+    private fun changeConstraints(view: ViewGroup, constraintSet: ConstraintSet) {
+        constraintSet.clone(binding.constraintLayout)
+        constraintSet.clear(view.id, ConstraintSet.BOTTOM)
+        constraintSet.connect(view.id, ConstraintSet.TOP, binding.guideline.id, ConstraintSet.TOP)
+        val transition = AutoTransition()
+        transition.duration = 50
+        TransitionManager.beginDelayedTransition(binding.constraintLayout, transition)
+        constraintSet.applyTo(binding.constraintLayout)
+    }
+
     private var dY = 0f
     private var downY = 0f
 
+    private var pagerViewWidth by Delegates.notNull<Float>()
+
+    private var distanceToGo: Float = 0f
+    private var distanceWent: Float = 0f
+    private var percent: Float = 0f
+    private var distanceToResize: Float = 0f
+
     @SuppressLint("ClickableViewAccessibility")
     private val peopleBoxTouchListener = View.OnTouchListener { v, event ->
+
+        val a = ResizeAnimation(v)
+        a.duration = 100
+
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
                 dY = v.y - event.rawY
                 downY = event.y
 
-                peopleViewBinding.handle.animation?.cancel() // stop animation if any
+                // peopleViewBinding.handle.animation?.cancel() // stop animation if any
+                distanceToGo = binding.guideline.y - (binding.root.height - binding.infoContainer.height)
+                distanceToResize = binding.root.width - pagerViewWidth
             }
             MotionEvent.ACTION_MOVE -> {
                 if (downY < event.y) { // down
-                    if (v.y <= binding.guideline.y) v.animate().y(event.rawY + dY).setDuration(0).start()
+                    if (v.y <= binding.guideline.y) {
+                        v.animate().y(event.rawY + dY).setDuration(0).start()
+                        binding.pager.animate().y(event.rawY + dY).setDuration(0).start()
+                    }
 
                 } else { // up
-                    if (v.y >= binding.root.height - binding.infoContainer.height) v.animate().y(event.rawY + dY).setDuration(0).start()
+                    if (v.y >= binding.root.height - binding.infoContainer.height) {
+                        v.animate().y(event.rawY + dY).setDuration(0).start()
+                        binding.pager.animate().y(event.rawY + dY).setDuration(0).start()
+                    }
                 }
+
+                // calculating view drag distance
+                distanceWent = v.y - (binding.root.height - binding.infoContainer.height)
+                percent = distanceWent.div(distanceToGo / 100)
+
+                // using the above to change view width
+                val resizeBy: Int = distanceToResize.roundToInt() - (percent.times(distanceToResize / 100)).roundToInt()
+                v.layoutParams.width = binding.root.width - resizeBy
+                v.requestLayout()
             }
             MotionEvent.ACTION_UP -> {
                 // snap
-                if (v.y >= binding.root.height - v.height.div(2)) {
+                if (v.y >= binding.root.height - v.height.div(2)) { // snap down
                     v.animate().y(binding.guideline.y).setDuration(100).start()
+                    binding.pager.animate().y(binding.guideline.y).setDuration(100).start()
                     map.setPadding(0, binding.toolbar.height, 0, binding.constraintLayout.height - binding.guideline.y.toInt())
+
+                    // snap view back to full width
+                    a.setParams(v.layoutParams.width, binding.root.width)
+                    v.startAnimation(a)
 
                 } else {
                     v.animate().y(binding.root.height - binding.infoContainer.height.toFloat()).setDuration(100).start()
+                    binding.pager.animate().y(binding.root.height - binding.infoContainer.height.toFloat()).setDuration(100).start()
                     map.setPadding(0, binding.toolbar.height, 0, binding.infoContainer.height)
+
+                    // snap view to pager width
+                    a.setParams(v.layoutParams.width, pagerViewWidth.toInt())
+                    v.startAnimation(a)
                 }
             }
         }
@@ -186,7 +212,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onMapReady(gmap: GoogleMap?) {
         map = gmap ?: return
-
         with(gmap) {
 
             setMapStyle(MapStyleOptions.loadRawResourceStyle(binding.root.context, Const.MAP_STYLE_AUBERGINE))

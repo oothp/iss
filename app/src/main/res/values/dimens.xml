@@ -6,7 +6,7 @@
     <dimen name="margin_6">6dp</dimen>
 
     <dimen name="page_margin">30dp</dimen>
-    <dimen name="page_offset">10dp</dimen>
+    <dimen name="page_offset">8dp</dimen>
 
     <dimen name="cell_width">72dp</dimen>
 

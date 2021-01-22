@@ -6,11 +6,11 @@
     <!--        android:endColor="#12000000"-->
     <!--        android:startColor="#12000000"-->
     <!--        android:useLevel="true" />-->
-    <solid android:color="#F3F3F3" />
+    <solid android:color="#5EF3F3F3" />
 
     <corners
         android:bottomLeftRadius="0dp"
-        android:bottomRightRadius='0dp'
+        android:bottomRightRadius="0dp"
         android:topLeftRadius="8dp"
         android:topRightRadius="8dp" />
 </shape>
