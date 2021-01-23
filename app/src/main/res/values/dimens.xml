@@ -5,8 +5,8 @@
     <dimen name="margin_half">8dp</dimen>
     <dimen name="margin_6">6dp</dimen>
 
-    <dimen name="page_margin">30dp</dimen>
-    <dimen name="page_offset">8dp</dimen>
+    <dimen name="page_margin">28dp</dimen>
+    <dimen name="page_offset">6dp</dimen>
 
     <dimen name="cell_width">72dp</dimen>
 

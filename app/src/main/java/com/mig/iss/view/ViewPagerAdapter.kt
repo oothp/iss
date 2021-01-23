@@ -1,5 +1,6 @@
 package com.mig.iss.view
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,7 +10,7 @@ import com.mig.iss.databinding.ViewSlide2Binding
 import com.mig.iss.databinding.ViewSlide3Binding
 import com.mig.iss.viewmodel.ItemDataViewModel
 
-class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>() {
+class ViewPagerAdapter(onClosePaneListener: OnSwipeDownCallback) : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>() {
 
     companion object {
         private const val TYPE_1 = 0
@@ -19,7 +20,7 @@ class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>()
 
     private var peopleList = listOf<ItemDataViewModel>()
     private var currentIssLocation: String? = null
-    private var timeLeft: String? = null
+    private var timeLeft: String? = "2 hr 21 min"
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MainViewHolder = when (viewType) {
         TYPE_1 -> {
@@ -35,9 +36,12 @@ class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>()
             Slide3Holder(ViewSlide3Binding.inflate(layoutInflater, parent, false))
         }
         else -> throw IllegalArgumentException("Illegal Item View Type")
+
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: MainViewHolder, position: Int) {
+        holder.itemView.setOnTouchListener(listener)
         when (holder) {
             is Slide1Holder -> holder.bind(peopleList)
             is Slide2Holder -> holder.bind(currentIssLocation)
@@ -58,7 +62,12 @@ class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>()
 
     inner class Slide1Holder(private val binding: ViewSlide1Binding) : MainViewHolder(binding.root) {
         fun bind(items: List<ItemDataViewModel>?) {
-            items?.forEach { binding.tv.text = "${binding.tv.text}\n${it.name}" } // todo
+            items?.forEach {
+                if (!binding.tv.text.contains(it.name)) {
+                    val str = "${binding.tv.text}\n${it.name}"
+                    binding.tv.text = str
+                }
+            }
             binding.executePendingBindings()
         }
     }
@@ -87,8 +96,14 @@ class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerAdapter.MainViewHolder>()
         this.notifyItemChanged(1)
     }
 
-    fun updateCountdown(timeUntil: String) {
-        timeLeft = timeUntil
-        this.notifyItemChanged(2)
+        fun updateCountdown(timeUntil: String) {
+            timeLeft = timeUntil
+            this.notifyItemChanged(2)
+        }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private val listener = View.OnTouchListener { _, event ->
+        onClosePaneListener.onSwipeDown(event) // WIP
+        true
     }
 }

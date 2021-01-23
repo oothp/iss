@@ -6,4 +6,6 @@
     <color name="colorPrimary">#FA7E51</color> <!-- transparent -->
     <color name="colorPrimaryDark">#BB4107</color>
     <color name="colorAccent">#FFC107</color>
+
+    <color name="page_background">#F4F4F4</color>
 </resources>

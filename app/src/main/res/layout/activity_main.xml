@@ -59,6 +59,7 @@
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/pager"
             android:layout_width="0dp"
+            android:elevation="1dp"
             android:layout_height="0dp"
             android:clipChildren="false"
             android:clipToPadding="false"
@@ -73,9 +74,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_people"
-            android:elevation="4dp"
             android:orientation="vertical"
-            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHeight_percent=".3"
@@ -95,7 +94,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0" />
-
         </LinearLayout>
 
         <androidx.appcompat.widget.Toolbar
@@ -116,7 +114,7 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:padding="@dimen/margin_6"
-                android:text="@string/debug"
+                android:text="DEBUG"
                 android:textColor="#FFE600"
                 android:textSize="26sp"
                 android:textStyle="bold"
